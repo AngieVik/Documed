@@ -171,6 +171,27 @@ function getActiveTemplate() {
   return DOC_TEMPLATES[id] || DOC_TEMPLATES["informe_asistencia"];
 }
 
+function switchTemplate() {
+  const template = getActiveTemplate();
+
+  // 1. Ocultar todas las secciones primero
+  document.querySelectorAll(".section-block").forEach(block => {
+    block.classList.add("hidden");
+  });
+
+  // 2. Mostrar solo las que están en el array visibleSections de la plantilla
+  if (template.visibleSections) {
+    template.visibleSections.forEach(secId => {
+      const el = document.getElementById(secId);
+      if (el) el.classList.remove("hidden");
+    });
+  }
+
+  // 3. Cambiar el título visual de la página
+  const mainTitle = document.querySelector("#report-view h1");
+  if (mainTitle) mainTitle.textContent = template.pdfTitle;
+}
+
 // ── Motor de generación de PDF ───────────────────────────────────────────
 
 async function generarPDF() {
@@ -311,6 +332,13 @@ window.onload = () => {
   document.getElementById("btn-print").addEventListener("click", generarPDF);
 
   initSignaturePads();
+
+  // Selector de plantilla
+  const docSelector = document.getElementById("doc-selector");
+  if (docSelector) {
+    docSelector.addEventListener("change", switchTemplate);
+  }
+  switchTemplate(); // Renderizado inicial
 
   // Service Worker (PWA offline)
   if ("serviceWorker" in navigator) {

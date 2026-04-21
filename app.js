@@ -200,6 +200,59 @@ function checkAge() {
 }
 
 
+// ── Renderizado Dinámico ────────────────────────────────────────────────
+function getFormData() {
+  const container = document.getElementById("dynamic-content");
+  if (!container) return {};
+  
+  const data = {};
+  const elements = container.querySelectorAll("input, select, textarea");
+  elements.forEach((el) => {
+    if (el.id) {
+      if (el.type === "checkbox" || el.type === "radio") {
+        data[el.id] = el.checked;
+      } else {
+        data[el.id] = el.value.trim();
+      }
+    }
+  });
+  return data;
+}
+
+function rebindGlobalEvents() {
+
+  const checkSinMedico = document.getElementById("check-sin-medico");
+  if (checkSinMedico) {
+    checkSinMedico.addEventListener("change", (e) => {
+      const camposTestigos = document.getElementById("campos-testigos");
+      if (camposTestigos) {
+        if (e.target.checked) camposTestigos.classList.remove("hidden");
+        else camposTestigos.classList.add("hidden");
+      }
+    });
+  }
+
+  const nacimientoInput = document.getElementById("paciente-nacimiento");
+  if (nacimientoInput) {
+    nacimientoInput.addEventListener("change", checkAge);
+  }
+
+  const checkDependencia = document.getElementById("check-dependencia");
+  if (checkDependencia) {
+    checkDependencia.addEventListener("change", (e) => {
+      const bloqueTutor = document.getElementById("bloque-tutor");
+      const labelFirmaPaciente = document.getElementById("label-firma-paciente");
+      if (e.target.checked) {
+        if (bloqueTutor) bloqueTutor.classList.remove("hidden");
+        if (labelFirmaPaciente) labelFirmaPaciente.textContent = "Firma del Representante Legal";
+      } else {
+        if (bloqueTutor) bloqueTutor.classList.add("hidden");
+        if (labelFirmaPaciente) labelFirmaPaciente.textContent = "Firma del Paciente";
+      }
+    });
+  }
+}
+
 // ── Selector de plantilla ────────────────────────────────────────────────
 
 function getActiveTemplate() {
@@ -211,65 +264,61 @@ function getActiveTemplate() {
 function switchTemplate() {
   const template = getActiveTemplate();
 
-  // 1. Ocultar todas las secciones primero
-  document.querySelectorAll(".section-block").forEach(block => {
-    block.classList.add("hidden");
-  });
+  const dynamicContainer = document.getElementById("dynamic-content");
+  const mainTitle = document.querySelector("#report-view h1");
 
-  // 2. Mostrar solo las que están en el array visibleSections de la plantilla
-  if (template.visibleSections) {
-    template.visibleSections.forEach(secId => {
-      const el = document.getElementById(secId);
-      if (el) el.classList.remove("hidden");
-    });
+  if (!template) {
+    if (dynamicContainer) {
+      dynamicContainer.innerHTML = `
+        <div class="flex flex-col items-center justify-center p-16 text-slate-400 min-h-[50vh]">
+          <img src="./icon-512.png" alt="DocuMed" class="w-32 h-32 opacity-20 mb-6 grayscale" />
+          <p class="text-xs uppercase tracking-widest font-semibold">Seleccione un documento para comenzar</p>
+        </div>
+      `;
+    }
+    if (mainTitle) mainTitle.textContent = "DOCUMED";
+    return;
   }
 
-  // 3. Cambiar el título visual de la página
-  const mainTitle = document.querySelector("#report-view h1");
+  if (dynamicContainer && template.getSections) {
+    dynamicContainer.innerHTML = template.getSections().join("");
+  }
+
   if (mainTitle) mainTitle.textContent = template.pdfTitle;
 
-  // 4. Actualizar etiqueta dinámica
-  const labelFirma = document.getElementById("label-firma-facultativo");
-  if (labelFirma) {
-    labelFirma.textContent = template.id === "alta_voluntaria" ? "Testigos" : "Facultativo";
-  }
-
-  // 5. Resetear estado del toggle y testigos
-  const checkSinMedico = document.getElementById("check-sin-medico");
-  if (checkSinMedico) checkSinMedico.checked = false;
-  const camposTestigos = document.getElementById("campos-testigos");
-  if (camposTestigos) camposTestigos.classList.add("hidden");
+  rebindGlobalEvents();
 }
-
-// ── Motor de generación de PDF ───────────────────────────────────────────
 
 async function generarPDF() {
   const template = getActiveTemplate();
-  const getVal   = (el) => (el ? el.value.trim() : "");
+  if (!template) {
+    alert("Seleccione un documento antes de generar el PDF.");
+    return;
+  }
+  const formData = getFormData();
+  const getVal   = (id) => (formData[id] || "");
 
   // Datos de asistencia
-  const fechaEl     = document.querySelector('#clinical-form input[type="date"]');
-  const horaEl      = document.querySelector('#clinical-form input[type="time"]');
-  const tipoServEl  = document.querySelector("#clinical-form select");
-  const fecha        = fechaEl ? fechaEl.value : "";
-  const hora         = horaEl  ? horaEl.value  : "";
-  const tipoServicio = tipoServEl ? tipoServEl.options[tipoServEl.selectedIndex]?.text || "" : "";
+  const fecha        = getVal("asistencia-fecha");
+  const hora         = getVal("asistencia-hora");
+  const tipoServEl  = document.getElementById("asistencia-tipo");
+  const tipoServicio = tipoServEl && tipoServEl.selectedIndex > 0 ? tipoServEl.options[tipoServEl.selectedIndex].text : "";
 
   // Filiación
-  const nombrePaciente = getVal(document.getElementById("paciente-nombre")) || "—";
-  const dniPaciente    = getVal(document.getElementById("paciente-dni")) || "—";
-  const fechaNacimiento= getVal(document.getElementById("paciente-nacimiento")) || "—";
-  const lugarAsistencia= getVal(document.getElementById("lugar-asistencia")) || "—";
+  const nombrePaciente = getVal("paciente-nombre") || "—";
+  const dniPaciente    = getVal("paciente-dni") || "—";
+  const fechaNacimiento= getVal("paciente-nacimiento") || "—";
+  const lugarAsistencia= getVal("lugar-asistencia") || "—";
 
   // Tutor Legal / Representante
-  const tutorNombre = getVal(document.getElementById("paciente-tutor-nombre"));
-  const tutorDni    = getVal(document.getElementById("paciente-tutor-dni"));
+  const tutorNombre = getVal("paciente-tutor-nombre");
+  const tutorDni    = getVal("paciente-tutor-dni");
   
-  const checkDependencia = document.getElementById("check-dependencia")?.checked || false;
+  const checkDependencia = formData["check-dependencia"] || false;
   let esMenor = false;
-  const inputNac = document.getElementById("paciente-nacimiento");
-  if (inputNac && inputNac.value) {
-    const fn = new Date(inputNac.value);
+  const inputNac = getVal("paciente-nacimiento");
+  if (inputNac) {
+    const fn = new Date(inputNac);
     const h = new Date();
     let ed = h.getFullYear() - fn.getFullYear();
     if (h.getMonth() < fn.getMonth() || (h.getMonth() === fn.getMonth() && h.getDate() < fn.getDate())) ed--;
@@ -278,15 +327,12 @@ async function generarPDF() {
   const tutorFirma = esMenor || checkDependencia;
 
   // Evaluación clínica
-  const textareas   = document.querySelectorAll("#clinical-form textarea");
   const selectAlergias = document.getElementById("select-alergias");
-  const inputAlergias  = document.getElementById("input-alergias");
-
   let alergias = "Sin alergias conocidas";
   if (selectAlergias) {
     const selVal  = selectAlergias.value;
     const selText = selectAlergias.options[selectAlergias.selectedIndex]?.text || "Sin alergias conocidas";
-    const inputText = getVal(inputAlergias);
+    const inputText = getVal("input-alergias");
 
     if (selVal === "sin_alergias") {
       alergias = "Sin alergias conocidas";
@@ -296,18 +342,18 @@ async function generarPDF() {
       alergias = inputText ? `${selText} - ${inputText}` : selText;
     }
   }
-  const antecedentes= getVal(textareas[0]) || "—";
-  const anamnesis   = getVal(textareas[1]) || "—";
-  const exploracion = getVal(textareas[2]) || "—";
-  const tratamiento = getVal(document.getElementById("tratamiento-textarea")) || "—";
-  const diagnostico = getVal(document.querySelector('#clinical-form input[list="dl_cie10"]')) || "—";
+  const antecedentes= getVal("antecedentes") || "—";
+  const anamnesis   = getVal("anamnesis") || "—";
+  const exploracion = getVal("exploracion") || "—";
+  const tratamiento = getVal("tratamiento-textarea") || "—";
+  const diagnostico = getVal("diagnostico") || "—";
 
   // Plan
   const selectPlan  = document.getElementById("select-plan");
   const planActuacion = (selectPlan && selectPlan.selectedIndex > 0)
                         ? selectPlan.options[selectPlan.selectedIndex].text
                         : "—";
-  const hospitalDestino = getVal(document.getElementById("hospital-destino")) || "—";
+  const hospitalDestino = getVal("hospital-destino") || "—";
 
   // Constantes vitales
   const constRows = document.querySelectorAll(".constantes-row");
@@ -315,13 +361,18 @@ async function generarPDF() {
   constRows.forEach((row, i) => {
     const vals = row.querySelectorAll("input");
     if (vals.length >= 5) {
+      const v0 = vals[0] ? vals[0].value.trim() : "";
+      const v1 = vals[1] ? vals[1].value.trim() : "";
+      const v2 = vals[2] ? vals[2].value.trim() : "";
+      const v3 = vals[3] ? vals[3].value.trim() : "";
+      const v4 = vals[4] ? vals[4].value.trim() : "";
       constantesData.push([
         { text: i === 0 ? "Toma 1" : `Toma ${i + 1}`, style: "tableLabel" },
-        { text: getVal(vals[0]) || "—", style: "tableData" },
-        { text: getVal(vals[1]) || "—", style: "tableData" },
-        { text: getVal(vals[2]) || "—", style: "tableData" },
-        { text: getVal(vals[3]) || "—", style: "tableData" },
-        { text: getVal(vals[4]) || "—", style: "tableData" },
+        { text: v0 || "—", style: "tableData" },
+        { text: v1 || "—", style: "tableData" },
+        { text: v2 || "—", style: "tableData" },
+        { text: v3 || "—", style: "tableData" },
+        { text: v4 || "—", style: "tableData" },
       ]);
     }
   });
@@ -345,14 +396,14 @@ async function generarPDF() {
       : { text: "Firmado digitalmente mediante certificado PAdES", italics: true, fontSize: 8, color: "#334155", margin: [0,10,0,0] };
 
   // Datos de negativa (alta voluntaria)
-  const negSituacion   = getVal(document.getElementById("neg-situacion"));
-  const negPropuesta   = getVal(document.getElementById("neg-propuesta"));
-  const negRiesgos     = getVal(document.getElementById("neg-riesgos"));
-  const sinMedico      = document.getElementById("check-sin-medico")?.checked || false;
-  const testigo1Nombre = getVal(document.getElementById("testigo1-nombre"));
-  const testigo1Dni    = getVal(document.getElementById("testigo1-dni"));
-  const testigo2Nombre = getVal(document.getElementById("testigo2-nombre"));
-  const testigo2Dni    = getVal(document.getElementById("testigo2-dni"));
+  const negSituacion   = getVal("neg-situacion");
+  const negPropuesta   = getVal("neg-propuesta");
+  const negRiesgos     = getVal("neg-riesgos");
+  const sinMedico      = formData["check-sin-medico"] || false;
+  const testigo1Nombre = getVal("testigo1-nombre");
+  const testigo1Dni    = getVal("testigo1-dni");
+  const testigo2Nombre = getVal("testigo2-nombre");
+  const testigo2Dni    = getVal("testigo2-dni");
 
   // Construir docDefinition delegando el content a la plantilla activa
   const docDefinition = {
@@ -395,12 +446,12 @@ async function generarPDF() {
   };
 
   // Nombre de archivo dinámico: YYYY-MM-DDIniciales.pdf
-  const nombreRaw = (document.getElementById("paciente-nombre")?.value || "").trim();
+  const nombreRaw = getVal("paciente-nombre") || "";
   const iniciales = nombreRaw.length > 0
     ? nombreRaw.replace(/\s+/g, " ").split(" ").map((p) => p[0].toUpperCase()).join("")
     : "ANONIMO";
 
-  const fechaInput = document.getElementById("asistencia-fecha")?.value || "";
+  const fechaInput = getVal("asistencia-fecha") || "";
   let fechaFormateada;
   if (fechaInput) {
     fechaFormateada = fechaInput;
@@ -425,45 +476,12 @@ window.onload = () => {
   document.getElementById("btn-clear").addEventListener("click", clearReport);
   document.getElementById("btn-print").addEventListener("click", generarPDF);
 
-  initSignaturePads();
+
 
   // Selector de plantilla
   const docSelector = document.getElementById("doc-selector");
   if (docSelector) {
     docSelector.addEventListener("change", switchTemplate);
-  }
-
-  // Toggle testigos sanitarios
-  const checkSinMedico = document.getElementById("check-sin-medico");
-  if (checkSinMedico) {
-    checkSinMedico.addEventListener("change", (e) => {
-      const camposTestigos = document.getElementById("campos-testigos");
-      if (camposTestigos) {
-        if (e.target.checked) camposTestigos.classList.remove("hidden");
-        else camposTestigos.classList.add("hidden");
-      }
-    });
-  }
-
-  // Lógica de Tutor y Dependencia
-  const nacimientoInput = document.getElementById("paciente-nacimiento");
-  if (nacimientoInput) {
-    nacimientoInput.addEventListener("change", checkAge);
-  }
-
-  const checkDependencia = document.getElementById("check-dependencia");
-  if (checkDependencia) {
-    checkDependencia.addEventListener("change", (e) => {
-      const bloqueTutor = document.getElementById("bloque-tutor");
-      const labelFirmaPaciente = document.getElementById("label-firma-paciente");
-      if (e.target.checked) {
-        if (bloqueTutor) bloqueTutor.classList.remove("hidden");
-        if (labelFirmaPaciente) labelFirmaPaciente.textContent = "Firma del Representante Legal";
-      } else {
-        if (bloqueTutor) bloqueTutor.classList.add("hidden");
-        if (labelFirmaPaciente) labelFirmaPaciente.textContent = "Firma del Paciente";
-      }
-    });
   }
 
   switchTemplate(); // Renderizado inicial

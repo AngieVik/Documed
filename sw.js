@@ -1,4 +1,4 @@
-const CACHE_NAME = 'documed-v1.5';
+const CACHE_NAME = 'documed-v1.6';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -6,6 +6,7 @@ const ASSETS_TO_CACHE = [
   './icon-192.png',
   './icon-512.png',
   './data.js',
+  './components.js',
   './templates.js',
   './app.js',
   './doc_informe_medico.js',

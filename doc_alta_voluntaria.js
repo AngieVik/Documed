@@ -12,6 +12,61 @@ const DOC_ALTA_VOLUNTARIA = {
     "firmas",
   ],
 
+  getSections() {
+    return [
+      UI_COMPONENTS.headerAsistencia(),
+      UI_COMPONENTS.filiacionPaciente(),
+      `
+        <div id="seccion-negativa" class="section-block page-break-avoid bg-amber-50 p-3 rounded mt-3">
+          <h3 class="text-xs font-bold text-amber-800 tracking-wider mb-3 uppercase">Declaración de Alta Voluntaria / Negativa a la Asistencia</h3>
+          <div class="bg-red-50 border-l-4 border-red-500 p-2 mb-3 text-[9px] text-justify text-red-900 leading-tight">
+            <strong>CLÁUSULA LEGAL (Ley 41/2002 de Autonomía del Paciente)</strong><br />
+            El/la paciente identificado/a supra, en pleno uso de sus facultades y tras haber sido debidamente informado/a de su situación clínica, de las actuaciones propuestas por el equipo sanitario y de las posibles consecuencias derivadas de su no aceptación, <strong>DECLARA EXPRESAMENTE su negativa a recibir el tratamiento o traslado indicado, ejerciendo el derecho reconocido en el artículo 2.4 de la Ley 41/2002, de 14 de noviembre, básica reguladora de la autonomía del paciente.</strong> El equipo asistente queda exonerado de toda responsabilidad derivada de la presente negativa, habiendo cumplido con su deber de información conforme al artículo 4 de la citada Ley.
+          </div>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-[10px] font-bold text-amber-700 tracking-wide mb-1">Diagnóstico de presunción / Situación actual</label>
+              <textarea id="neg-situacion" rows="2" class="w-full border-b border-amber-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-amber-500" placeholder="" oninput="autoResize(this)"></textarea>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-amber-700 tracking-wide mb-1">Tratamiento o Traslado propuesto</label>
+              <textarea id="neg-propuesta" rows="2" class="w-full border-b border-amber-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-amber-500" placeholder="" oninput="autoResize(this)"></textarea>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-amber-700 tracking-wide mb-1">Riesgos explicados al paciente</label>
+              <textarea id="neg-riesgos" rows="2" class="w-full border-b border-amber-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-amber-500" placeholder="" oninput="autoResize(this)"></textarea>
+            </div>
+            <div class="mt-4 pt-2 border-t border-amber-200">
+              <label class="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" id="check-sin-medico" class="w-4 h-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500">
+                <span class="text-xs font-semibold text-amber-800">Sin facultativo presente (Testigos sanitarios)</span>
+              </label>
+            </div>
+            <div id="campos-testigos" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 bg-amber-100/50 p-3 rounded border border-amber-200">
+              <div>
+                <label class="block text-[10px] font-bold text-amber-700 tracking-wide mb-1">Nombre Testigo 1</label>
+                <input type="text" id="testigo1-nombre" class="w-full border-b border-amber-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-amber-500" placeholder="" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-amber-700 tracking-wide mb-1">DNI Testigo 1</label>
+                <input type="text" id="testigo1-dni" class="w-full border-b border-amber-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-amber-500" placeholder="" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-amber-700 tracking-wide mb-1">Nombre Testigo 2</label>
+                <input type="text" id="testigo2-nombre" class="w-full border-b border-amber-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-amber-500" placeholder="" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-amber-700 tracking-wide mb-1">DNI Testigo 2</label>
+                <input type="text" id="testigo2-dni" class="w-full border-b border-amber-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-amber-500" placeholder="" />
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      UI_COMPONENTS.firmas("Firma del Paciente", "Testigos")
+    ];
+  },
+
   styles: {
     titulo: {
       fontSize: 13,

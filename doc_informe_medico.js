@@ -16,6 +16,87 @@ const DOC_INFORME_MEDICO = {
     "firmas",
   ],
 
+  getSections() {
+    return [
+      UI_COMPONENTS.headerAsistencia(),
+      UI_COMPONENTS.filiacionPaciente(),
+      `
+        <div id="evaluacion-clinica" class="section-block">
+          <h3 class="text-xs font-bold text-slate-800 tracking-wider mb-3 mt-2 uppercase">Evaluación Clínica</h3>
+          <div class="mb-3">
+            <label class="block text-[10px] font-bold text-red-600 tracking-wide mb-1">Alergias Medicamentosas (NAMC)</label>
+            <div class="flex sm:flex-row gap-2">
+              <select id="select-alergias" class="sm:w-1/3 border-b border-red-300 bg-transparent py-1 text-xs text-red-700 focus:outline-none focus:border-red-500">
+                <option value="sin_alergias">Sin alergias conocidas</option>
+                <option value="betalactamicos">Betalactámicos</option>
+                <option value="aines">AINEs</option>
+                <option value="quimioterapicos">Quimioterápicos</option>
+                <option value="antiepilepticos">Antiepilépticos</option>
+                <option value="otras">Otras (especificar)</option>
+              </select>
+              <input type="text" id="input-alergias" list="dl_farmacos" class="flex-1 border-b border-red-300 bg-transparent py-1 text-xs text-red-700 placeholder-red-400/70 focus:outline-none focus:border-red-500" placeholder="Especifique alergias si las hubiera..." />
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Antecedentes Personales</label>
+            <textarea id="antecedentes" rows="1" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" oninput="autoResize(this)"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Anamnesis</label>
+            <textarea id="anamnesis" rows="1" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" oninput="autoResize(this)"></textarea>
+          </div>
+      ` + UI_COMPONENTS.constantesVitales() + `
+          <div class="mb-3">
+            <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Exploración Física</label>
+            <textarea id="exploracion" rows="1" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" oninput="autoResize(this)"></textarea>
+          </div>
+        </div>
+
+        <div id="resolucion-plan" class="section-block page-break-avoid">
+          <h3 class="text-xs font-bold text-slate-800 tracking-wider mb-3 mt-2 uppercase">Resolución y Plan</h3>
+          <div class="mb-3 relative">
+            <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Juicio Clínico y Diagnóstico Presuntivo</label>
+            <input id="diagnostico" type="text" list="dl_cie10" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 font-semibold focus:outline-none focus:border-blue-600 placeholder-slate-400" />
+          </div>
+          <div class="mb-3 relative">
+            <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Tratamiento Administrado In Situ "Vademécum"</label>
+            <div class="flex gap-2 mb-2 no-print">
+              <input type="text" id="farmaco-input" list="dl_farmacos" class="flex-1 border-b border-slate-300 bg-transparent py-1 text-[10px] text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="Principio Activo" />
+              <input type="text" id="dosis-input" class="w-20 border-b border-slate-300 bg-transparent py-1 text-[10px] text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="Dosis" />
+              <select id="via-input" class="w-16 border-b border-slate-300 bg-transparent py-1 text-[10px] text-slate-800 focus:outline-none focus:border-blue-600">
+                <option value="IV">IV</option><option value="IM">IM</option><option value="SC">SC</option><option value="VO">VO</option><option value="SL">SL</option><option value="INH">INH</option>
+              </select>
+              <button type="button" onclick="appendTratamiento()" class="bg-blue-100 text-blue-700 px-3 py-1 rounded text-xs hover:bg-blue-200 font-bold transition-colors">+</button>
+            </div>
+            <textarea id="tratamiento-textarea" rows="1" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" oninput="autoResize(this)"></textarea>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Plan de Actuación</label>
+              <select id="select-plan" required class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 focus:outline-none focus:border-blue-600 invalid:text-slate-400">
+                <option value="" disabled selected hidden></option>
+                <option value="alta" class="text-slate-800">Alta in situ con recomendaciones</option>
+                <option value="cs" class="text-slate-800">Derivación a Atención Primaria</option>
+                <option value="urgencias_propios" class="text-slate-800">Derivación a Urgencias (Medios propios)</option>
+                <option value="urgencias_amb" class="text-slate-800">Traslado a Urgencias en Ambulancia</option>
+              </select>
+            </div>
+            <div id="seccion-destino">
+              <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Hospital o Centro de destino (si procede)</label>
+              <div class="flex gap-2">
+                <select id="provincia-selector" required onchange="updateHospitalesDatalist()" class="w-1/3 border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 focus:outline-none focus:border-blue-600 invalid:text-slate-400">
+                  <option value="" disabled selected hidden></option>
+                </select>
+                <input type="text" id="hospital-destino" list="dl_hospitales" class="w-2/3 border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      UI_COMPONENTS.firmas("Firma del Paciente", "Facultativo")
+    ];
+  },
+
   // ── Definición de estilos pdfmake compartidos por esta plantilla ──────
   styles: {
     titulo: {

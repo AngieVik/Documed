@@ -1,10 +1,13 @@
-const CACHE_NAME = 'documed-v3';
+const CACHE_NAME = 'documed-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './data.js',
+  './templates.js',
+  './app.js'
 ];
 
 // URLs de las librerías CDN a cachear para uso offline

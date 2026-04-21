@@ -279,15 +279,15 @@ async function generarPDF() {
 
   // Evaluación clínica
   const textareas   = document.querySelectorAll("#clinical-form textarea");
-  const selectAlergias = document.querySelector('#clinical-form select[class*="red"]');
-  const inputAlergias = document.getElementById("input-alergias");
-  
+  const selectAlergias = document.getElementById("select-alergias");
+  const inputAlergias  = document.getElementById("input-alergias");
+
   let alergias = "Sin alergias conocidas";
   if (selectAlergias) {
-    const selVal = selectAlergias.value;
+    const selVal  = selectAlergias.value;
     const selText = selectAlergias.options[selectAlergias.selectedIndex]?.text || "Sin alergias conocidas";
     const inputText = getVal(inputAlergias);
-    
+
     if (selVal === "sin_alergias") {
       alergias = "Sin alergias conocidas";
     } else if (selVal === "otras") {
@@ -303,10 +303,10 @@ async function generarPDF() {
   const diagnostico = getVal(document.querySelector('#clinical-form input[list="dl_cie10"]')) || "—";
 
   // Plan
-  const planSelects  = document.querySelectorAll("#clinical-form select");
-  const planIdx      = planSelects.length >= 2 ? planSelects[1] : null;
-  let planActuacion  = planIdx ? planIdx.options[planIdx.selectedIndex]?.text : "";
-  planActuacion = planActuacion || "—";
+  const selectPlan  = document.getElementById("select-plan");
+  const planActuacion = (selectPlan && selectPlan.selectedIndex > 0)
+                        ? selectPlan.options[selectPlan.selectedIndex].text
+                        : "—";
   const hospitalDestino = getVal(document.getElementById("hospital-destino")) || "—";
 
   // Constantes vitales

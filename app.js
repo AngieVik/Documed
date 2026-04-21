@@ -204,8 +204,8 @@ function checkAge() {
 
 function getActiveTemplate() {
   const sel = document.getElementById("doc-selector");
-  const id  = sel ? sel.value : "informe_asistencia";
-  return DOC_TEMPLATES[id] || DOC_TEMPLATES["informe_asistencia"];
+  const id  = sel ? sel.value : "informe_medico";
+  return DOC_TEMPLATES[id] || DOC_TEMPLATES["informe_medico"];
 }
 
 function switchTemplate() {
@@ -279,7 +279,23 @@ async function generarPDF() {
 
   // Evaluación clínica
   const textareas   = document.querySelectorAll("#clinical-form textarea");
-  const alergias    = getVal(document.querySelector('#clinical-form select[class*="red"]')) || "Sin alergias conocidas";
+  const selectAlergias = document.querySelector('#clinical-form select[class*="red"]');
+  const inputAlergias = document.getElementById("input-alergias");
+  
+  let alergias = "Sin alergias conocidas";
+  if (selectAlergias) {
+    const selVal = selectAlergias.value;
+    const selText = selectAlergias.options[selectAlergias.selectedIndex]?.text || "Sin alergias conocidas";
+    const inputText = getVal(inputAlergias);
+    
+    if (selVal === "sin_alergias") {
+      alergias = "Sin alergias conocidas";
+    } else if (selVal === "otras") {
+      alergias = inputText ? inputText : "Otras alergias (no especificadas)";
+    } else {
+      alergias = inputText ? `${selText} - ${inputText}` : selText;
+    }
+  }
   const antecedentes= getVal(textareas[0]) || "—";
   const anamnesis   = getVal(textareas[1]) || "—";
   const exploracion = getVal(textareas[2]) || "—";
@@ -289,7 +305,8 @@ async function generarPDF() {
   // Plan
   const planSelects  = document.querySelectorAll("#clinical-form select");
   const planIdx      = planSelects.length >= 2 ? planSelects[1] : null;
-  const planActuacion= planIdx ? planIdx.options[planIdx.selectedIndex]?.text || "—" : "—";
+  let planActuacion  = planIdx ? planIdx.options[planIdx.selectedIndex]?.text : "";
+  planActuacion = planActuacion || "—";
   const hospitalDestino = getVal(document.getElementById("hospital-destino")) || "—";
 
   // Constantes vitales

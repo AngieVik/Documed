@@ -7,7 +7,9 @@ const ASSETS_TO_CACHE = [
   './icon-512.png',
   './data.js',
   './templates.js',
-  './app.js'
+  './app.js',
+  './doc_informe_medico.js',
+  './doc_alta_voluntaria.js'
 ];
 
 // URLs de las librerías CDN a cachear para uso offline

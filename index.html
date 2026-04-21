@@ -144,24 +144,25 @@
     </style>
   </head>
   <body class="bg-slate-100 text-slate-800 font-sans antialiased pb-20">
-    <nav
-      class="fixed top-0 w-full bg-slate-900 text-slate-300 flex justify-between items-center px-4 py-2 z-50 no-print shadow-md"
+ <nav
+      class="fixed top-0 w-full bg-slate-900 text-slate-300 flex justify-between items-center px-2 sm:px-4 py-2 z-50 no-print shadow-md"
     >
-      <div class="font-bold text-white text-xs tracking-wider">
+      <div class="font-bold text-white text-[10px] sm:text-xs tracking-wider shrink-0">
         DocuMed <span class="text-slate-500">v1.5</span>
       </div>
-      <div class="flex items-center gap-2 sm:gap-4">
+      <div class="flex items-center gap-1 sm:gap-4">
         <select
           id="doc-selector"
-          class="hidden sm:block bg-slate-800 border border-slate-600 text-slate-200 text-xs rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+          class="w-28 sm:w-auto truncate bg-slate-800 border border-slate-600 text-slate-200 text-xs rounded px-1 sm:px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
           title="Tipo de documento"
         >
           <option value="informe_medico">Informe Médico</option>
           <option value="alta_voluntaria">Alta Voluntaria / Negativa</option>
         </select>
+        
         <button
           id="btn-info"
-          class="flex items-center gap-1.5 hover:text-white transition-colors text-sm px-2 py-1 rounded hover:bg-slate-800"
+          class="flex items-center gap-1.5 hover:text-white transition-colors text-sm px-1.5 sm:px-2 py-1 rounded hover:bg-slate-800"
           title="Instrucciones"
         >
           <svg
@@ -181,9 +182,10 @@
           </svg>
           <span class="hidden sm:inline">Instrucciones</span>
         </button>
+        
         <button
           id="btn-config"
-          class="flex items-center gap-1.5 hover:text-white transition-colors text-sm px-2 py-1 rounded hover:bg-slate-800"
+          class="flex items-center gap-1.5 hover:text-white transition-colors text-sm px-1.5 sm:px-2 py-1 rounded hover:bg-slate-800"
           title="Configuración"
         >
           <svg
@@ -204,9 +206,10 @@
           </svg>
           <span class="hidden sm:inline">Configuración</span>
         </button>
+        
         <button
           id="btn-report"
-          class="flex items-center gap-1.5 hover:text-white transition-colors text-sm px-2 py-1 rounded hover:bg-slate-800"
+          class="flex items-center gap-1.5 hover:text-white transition-colors text-sm px-1.5 sm:px-2 py-1 rounded hover:bg-slate-800"
           title="Informe"
         >
           <svg
@@ -230,9 +233,10 @@
           </svg>
           <span class="hidden sm:inline">Informe</span>
         </button>
+        
         <button
           id="btn-clear"
-          class="flex items-center gap-1.5 text-red-400 hover:text-red-300 transition-colors text-sm px-2 py-1 rounded hover:bg-slate-800"
+          class="flex items-center gap-1.5 text-red-400 hover:text-red-300 transition-colors text-sm px-1.5 sm:px-2 py-1 rounded hover:bg-slate-800"
           title="Borrar"
         >
           <svg
@@ -253,9 +257,10 @@
           </svg>
           <span class="hidden sm:inline">Borrar</span>
         </button>
+        
         <button
           id="btn-print"
-          class="flex items-center gap-1.5 bg-blue-600 text-white hover:bg-blue-500 transition-colors text-sm px-3 py-1 rounded shadow"
+          class="flex items-center gap-1.5 bg-blue-600 text-white hover:bg-blue-500 transition-colors text-sm px-2 sm:px-3 py-1 rounded shadow"
           title="Imprimir PDF"
         >
           <svg

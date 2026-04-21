@@ -163,6 +163,43 @@ function initSignaturePads() {
   });
 }
 
+// ── Lógica de Tutor Legal ────────────────────────────────────────────────
+
+function checkAge() {
+  const inputNacimiento = document.getElementById("paciente-nacimiento");
+  const bloqueTutor = document.getElementById("bloque-tutor");
+  const contenedorDependencia = document.getElementById("contenedor-dependencia");
+  const checkDependencia = document.getElementById("check-dependencia");
+  const labelFirmaPaciente = document.getElementById("label-firma-paciente");
+
+  if (!inputNacimiento || !inputNacimiento.value) return;
+
+  const fechaNac = new Date(inputNacimiento.value);
+  const hoy = new Date();
+  let edad = hoy.getFullYear() - fechaNac.getFullYear();
+  const m = hoy.getMonth() - fechaNac.getMonth();
+  
+  if (m < 0 || (m === 0 && hoy.getDate() < fechaNac.getDate())) {
+    edad--;
+  }
+
+  if (edad < 18) {
+    if (bloqueTutor) bloqueTutor.classList.remove("hidden");
+    if (contenedorDependencia) contenedorDependencia.classList.add("hidden");
+    if (labelFirmaPaciente) labelFirmaPaciente.textContent = "Firma del Tutor Legal";
+  } else {
+    if (contenedorDependencia) contenedorDependencia.classList.remove("hidden");
+    if (checkDependencia && checkDependencia.checked) {
+      if (bloqueTutor) bloqueTutor.classList.remove("hidden");
+      if (labelFirmaPaciente) labelFirmaPaciente.textContent = "Firma del Representante Legal";
+    } else {
+      if (bloqueTutor) bloqueTutor.classList.add("hidden");
+      if (labelFirmaPaciente) labelFirmaPaciente.textContent = "Firma del Paciente";
+    }
+  }
+}
+
+
 // ── Selector de plantilla ────────────────────────────────────────────────
 
 function getActiveTemplate() {
@@ -190,6 +227,18 @@ function switchTemplate() {
   // 3. Cambiar el título visual de la página
   const mainTitle = document.querySelector("#report-view h1");
   if (mainTitle) mainTitle.textContent = template.pdfTitle;
+
+  // 4. Actualizar etiqueta dinámica
+  const labelFirma = document.getElementById("label-firma-facultativo");
+  if (labelFirma) {
+    labelFirma.textContent = template.id === "alta_voluntaria" ? "Testigos" : "Facultativo";
+  }
+
+  // 5. Resetear estado del toggle y testigos
+  const checkSinMedico = document.getElementById("check-sin-medico");
+  if (checkSinMedico) checkSinMedico.checked = false;
+  const camposTestigos = document.getElementById("campos-testigos");
+  if (camposTestigos) camposTestigos.classList.add("hidden");
 }
 
 // ── Motor de generación de PDF ───────────────────────────────────────────
@@ -207,11 +256,26 @@ async function generarPDF() {
   const tipoServicio = tipoServEl ? tipoServEl.options[tipoServEl.selectedIndex]?.text || "" : "";
 
   // Filiación
-  const allTextInputs  = document.querySelectorAll('#clinical-form input[type="text"]');
-  const nombrePaciente = getVal(allTextInputs[0]) || "—";
-  const dniPaciente    = getVal(allTextInputs[1]) || "—";
-  const fechaNacimiento= getVal(document.querySelectorAll('#clinical-form input[type="date"]')[1]) || "—";
-  const lugarAsistencia= getVal(allTextInputs[2]) || "—";
+  const nombrePaciente = getVal(document.getElementById("paciente-nombre")) || "—";
+  const dniPaciente    = getVal(document.getElementById("paciente-dni")) || "—";
+  const fechaNacimiento= getVal(document.getElementById("paciente-nacimiento")) || "—";
+  const lugarAsistencia= getVal(document.getElementById("lugar-asistencia")) || "—";
+
+  // Tutor Legal / Representante
+  const tutorNombre = getVal(document.getElementById("paciente-tutor-nombre"));
+  const tutorDni    = getVal(document.getElementById("paciente-tutor-dni"));
+  
+  const checkDependencia = document.getElementById("check-dependencia")?.checked || false;
+  let esMenor = false;
+  const inputNac = document.getElementById("paciente-nacimiento");
+  if (inputNac && inputNac.value) {
+    const fn = new Date(inputNac.value);
+    const h = new Date();
+    let ed = h.getFullYear() - fn.getFullYear();
+    if (h.getMonth() < fn.getMonth() || (h.getMonth() === fn.getMonth() && h.getDate() < fn.getDate())) ed--;
+    if (ed < 18) esMenor = true;
+  }
+  const tutorFirma = esMenor || checkDependencia;
 
   // Evaluación clínica
   const textareas   = document.querySelectorAll("#clinical-form textarea");
@@ -263,6 +327,16 @@ async function generarPDF() {
       ? { image: window.padMedico.toDataURL("image/png"), width: 220, height: 70, margin: [0,4,0,0] }
       : { text: "Firmado digitalmente mediante certificado PAdES", italics: true, fontSize: 8, color: "#334155", margin: [0,10,0,0] };
 
+  // Datos de negativa (alta voluntaria)
+  const negSituacion   = getVal(document.getElementById("neg-situacion"));
+  const negPropuesta   = getVal(document.getElementById("neg-propuesta"));
+  const negRiesgos     = getVal(document.getElementById("neg-riesgos"));
+  const sinMedico      = document.getElementById("check-sin-medico")?.checked || false;
+  const testigo1Nombre = getVal(document.getElementById("testigo1-nombre"));
+  const testigo1Dni    = getVal(document.getElementById("testigo1-dni"));
+  const testigo2Nombre = getVal(document.getElementById("testigo2-nombre"));
+  const testigo2Dni    = getVal(document.getElementById("testigo2-dni"));
+
   // Construir docDefinition delegando el content a la plantilla activa
   const docDefinition = {
     pageSize: "A4",
@@ -297,6 +371,9 @@ async function generarPDF() {
       constantesData,
       firmaPacienteContent, firmaMedicoContent,
       empresa, cif, direccion, medico, colegiado,
+      tutorNombre, tutorDni, tutorFirma,
+      negSituacion, negPropuesta, negRiesgos,
+      sinMedico, testigo1Nombre, testigo1Dni, testigo2Nombre, testigo2Dni,
     }),
   };
 
@@ -338,6 +415,40 @@ window.onload = () => {
   if (docSelector) {
     docSelector.addEventListener("change", switchTemplate);
   }
+
+  // Toggle testigos sanitarios
+  const checkSinMedico = document.getElementById("check-sin-medico");
+  if (checkSinMedico) {
+    checkSinMedico.addEventListener("change", (e) => {
+      const camposTestigos = document.getElementById("campos-testigos");
+      if (camposTestigos) {
+        if (e.target.checked) camposTestigos.classList.remove("hidden");
+        else camposTestigos.classList.add("hidden");
+      }
+    });
+  }
+
+  // Lógica de Tutor y Dependencia
+  const nacimientoInput = document.getElementById("paciente-nacimiento");
+  if (nacimientoInput) {
+    nacimientoInput.addEventListener("change", checkAge);
+  }
+
+  const checkDependencia = document.getElementById("check-dependencia");
+  if (checkDependencia) {
+    checkDependencia.addEventListener("change", (e) => {
+      const bloqueTutor = document.getElementById("bloque-tutor");
+      const labelFirmaPaciente = document.getElementById("label-firma-paciente");
+      if (e.target.checked) {
+        if (bloqueTutor) bloqueTutor.classList.remove("hidden");
+        if (labelFirmaPaciente) labelFirmaPaciente.textContent = "Firma del Representante Legal";
+      } else {
+        if (bloqueTutor) bloqueTutor.classList.add("hidden");
+        if (labelFirmaPaciente) labelFirmaPaciente.textContent = "Firma del Paciente";
+      }
+    });
+  }
+
   switchTemplate(); // Renderizado inicial
 
   // Service Worker (PWA offline)

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'documed-v4';
+const CACHE_NAME = 'documed-v1.5';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

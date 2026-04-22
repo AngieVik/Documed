@@ -18,18 +18,18 @@ const DOC_ALTA_VOLUNTARIA = {
       UI_COMPONENTS.filiacionPaciente(),
       `
         <div id="seccion-negativa" class="section-block page-break-avoid bg-slate-50 p-3 rounded mt-3">
-          <h3 class="text-xs font-bold text-slate-800 tracking-wider mb-3 uppercase">Declaración de Alta Voluntaria / Negativa a la Asistencia</h3>
+          <h3 class="text-xs font-bold text-slate-800 tracking-wider mb-3 uppercase">DECLARACIÓN DE ALTA VOLUNTARIA / NEGATIVA</h3>
           <div class="space-y-3">
             <div>
-              <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Diagnóstico de presunción / Situación actual</label>
+              <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Situación Clínica Actual</label>
               <textarea id="neg-situacion" rows="2" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="" oninput="autoResize(this)"></textarea>
             </div>
             <div>
-              <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Tratamiento o Traslado propuesto</label>
+              <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Propuesta Facultativa Rechazada</label>
               <textarea id="neg-propuesta" rows="2" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="" oninput="autoResize(this)"></textarea>
             </div>
             <div>
-              <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Riesgos explicados al paciente</label>
+              <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Riesgos Advertidos al Paciente</label>
               <textarea id="neg-riesgos" rows="2" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="" oninput="autoResize(this)"></textarea>
             </div>
             <div class="mt-4 pt-2 border-t border-slate-200">
@@ -42,8 +42,7 @@ const DOC_ALTA_VOLUNTARIA = {
         </div>
       `,
       UI_COMPONENTS.testigos(),
-      UI_COMPONENTS.clausulaLegal(`<strong>CLÁUSULA LEGAL (Ley 41/2002 de Autonomía del Paciente)</strong><br />
-El/la paciente identificado/a supra, en pleno uso de sus facultades y tras haber sido debidamente informado/a de su situación clínica, de las actuaciones propuestas por el equipo sanitario y de las posibles consecuencias derivadas de su no aceptación, <strong>DECLARA EXPRESAMENTE su negativa a recibir el tratamiento o traslado indicado, ejerciendo el derecho reconocido en el artículo 2.4 de la Ley 41/2002, de 14 de noviembre, básica reguladora de la autonomía del paciente.</strong> El equipo asistente queda exonerado de toda responsabilidad derivada de la presente negativa, habiendo cumplido con su deber de información conforme al artículo 4 de la citada Ley.`),
+      UI_COMPONENTS.clausulaLegal(CLAUSULA_LEGAL_HTML),
       UI_COMPONENTS.firmas("Firma del Paciente", "Facultativo")
     ];
   },
@@ -136,7 +135,6 @@ El/la paciente identificado/a supra, en pleno uso de sus facultades y tras haber
             ? "FIRMA DEL TUTOR / REPRESENTANTE LEGAL"
             : "FIRMA DEL PACIENTE",
           style: "firmaLabel",
-          color: tutorFirma ? "#92400e" : "#0f172a",
         },
         firmaPacienteContent,
         {
@@ -171,62 +169,26 @@ El/la paciente identificado/a supra, en pleno uso de sus facultades y tras haber
           {
             text: "TESTIGOS SANITARIOS",
             style: "firmaLabel",
-            color: "#92400e",
           },
           {
-            text: "Los abajo firmantes, en calidad de testigos sanitarios, dan fe de la negativa del paciente tras haber sido debidamente informado.",
+            text: INFO_TESTIGOS_LEGAL,
             italics: true,
             fontSize: 7.5,
-            color: "#78350f",
-            margin: [0, 4, 0, 6],
+            color: "#475569",
+            margin: [0, 4, 0, 10],
           },
-          {
-            table: {
-              widths: ["*", "auto"],
-              body: [
-                [
-                  { text: "Testigo", style: "testigo" },
-                  { text: "DNI / NIE", style: "testigo" },
-                ],
-                ...(testigosData && testigosData.length > 0 
-                  ? testigosData.map(t => [
-                      { text: t.nombre || "—", fontSize: 8 },
-                      { text: t.dni || "—", fontSize: 8 },
-                    ])
-                  : [
-                      [{ text: "—", fontSize: 8 }, { text: "—", fontSize: 8 }]
-                    ]
-                )
-              ],
-            },
-            layout: {
-              hLineWidth: () => 0.3,
-              vLineWidth: () => 0.3,
-              hLineColor: () => "#d1d5db",
-              vLineColor: () => "#d1d5db",
-            },
-            margin: [0, 0, 0, 6],
-          },
-          {
-            canvas: [
-              {
-                type: "line",
-                x1: 0,
-                y1: 0,
-                x2: 220,
-                y2: 0,
-                lineWidth: 0.5,
-                lineColor: "#94a3b8",
-              },
-            ],
-            margin: [0, 4, 0, 2],
-          },
-          {
-            text: "Firmas de testigos identificados supra",
-            fontSize: 7,
-            color: "#6b7280",
-            italics: true,
-          },
+          ...(testigosData && testigosData.length > 0 
+            ? testigosData.map(t => ({
+                stack: [
+                  { text: `Testigo: ${t.nombre || "—"} (DNI: ${t.dni || "—"})`, fontSize: 8, margin: [0, 6, 0, 20] },
+                  {
+                    canvas: [{ type: "line", x1: 0, y1: 0, x2: 220, y2: 0, lineWidth: 0.5, lineColor: "#94a3b8" }],
+                    margin: [0, 0, 0, 2]
+                  },
+                  { text: "Firma", fontSize: 7, color: "#6b7280", italics: true, margin: [0, 0, 0, 10] }
+                ]
+              }))
+            : [{ text: "Sin testigos especificados", italics: true, fontSize: 8, color: "#94a3b8" }])
         ],
       };
     } else {
@@ -340,7 +302,6 @@ El/la paciente identificado/a supra, en pleno uso de sus facultades y tras haber
                     text: tutorNombre,
                     style: "labelVal",
                     bold: true,
-                    color: "#92400e",
                   },
                 ],
               },
@@ -379,7 +340,7 @@ El/la paciente identificado/a supra, en pleno uso de sus facultades y tras haber
         margin: [0, 0, 0, 8],
         stack: [
           { text: "Riesgos Advertidos al Paciente", style: "labelKey" },
-          { text: negRiesgos || "—", style: "labelVal", color: "#b91c1c" },
+          { text: negRiesgos || "—", style: "labelVal" },
         ],
       },
 
@@ -403,7 +364,7 @@ El/la paciente identificado/a supra, en pleno uso de sus facultades y tras haber
         lineHeight: 1.2,
         alignment: "justify",
         margin: [0, 6, 0, 8],
-        text: "CLÁUSULA LEGAL (Ley 41/2002 de Autonomía del Paciente)\nEl/la paciente identificado/a supra, en pleno uso de sus facultades y tras haber sido debidamente informado/a de su situación clínica, de las actuaciones propuestas por el equipo sanitario y de las posibles consecuencias derivadas de su no aceptación, DECLARA EXPRESAMENTE su negativa a recibir el tratamiento o traslado indicado, ejerciendo el derecho reconocido en el artículo 2.4 de la Ley 41/2002, de 14 de noviembre, básica reguladora de la autonomía del paciente. El equipo asistente queda exonerado de toda responsabilidad derivada de la presente negativa, habiendo cumplido con su deber de información conforme al artículo 4 de la citada Ley.",
+        text: CLAUSULA_LEGAL_PDF,
       },
 
       // FIRMAS

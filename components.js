@@ -1,3 +1,18 @@
+const INFO_TESTIGOS_LEGAL = "Los abajo firmantes, en calidad de testigos sanitarios, dan fe de la negativa del paciente tras haber sido debidamente informado.";
+
+const CLAUSULA_LEGAL_HTML = `<strong>CLÁUSULA LEGAL</strong> (<strong>Ley 41/2002</strong> de Autonomía del Paciente)<br />El/la paciente identificado/a supra, en pleno uso de sus facultades y tras haber sido debidamente informado/a de su situación clínica, de las actuaciones propuestas por el equipo sanitario y de las posibles consecuencias derivadas de su no aceptación, <strong>DECLARA EXPRESAMENTE</strong> su negativa a recibir el tratamiento o traslado indicado, ejerciendo el derecho reconocido en el artículo 2.4 de la <strong>Ley 41/2002</strong>, de 14 de noviembre, básica reguladora de la autonomía del paciente. El equipo asistente queda exonerado de toda responsabilidad derivada de la presente negativa, habiendo cumplido con su deber de información conforme al artículo 4 de la citada Ley.`;
+
+const CLAUSULA_LEGAL_PDF = [
+  { text: "CLÁUSULA LEGAL", bold: true },
+  { text: " (" },
+  { text: "Ley 41/2002", bold: true },
+  { text: " de Autonomía del Paciente)\\nEl/la paciente identificado/a supra, en pleno uso de sus facultades y tras haber sido debidamente informado/a de su situación clínica, de las actuaciones propuestas por el equipo sanitario y de las posibles consecuencias derivadas de su no aceptación, " },
+  { text: "DECLARA EXPRESAMENTE", bold: true },
+  { text: " su negativa a recibir el tratamiento o traslado indicado, ejerciendo el derecho reconocido en el artículo 2.4 de la " },
+  { text: "Ley 41/2002", bold: true },
+  { text: ", de 14 de noviembre, básica reguladora de la autonomía del paciente. El equipo asistente queda exonerado de toda responsabilidad derivada de la presente negativa, habiendo cumplido con su deber de información conforme al artículo 4 de la citada Ley." }
+];
+
 const UI_COMPONENTS = {
   headerAsistencia() {
     return `
@@ -136,7 +151,7 @@ const UI_COMPONENTS = {
               <input type="text" maxlength="3" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="input-gluc w-12 border-b border-slate-300 bg-transparent py-1 text-xs text-center font-mono focus:outline-none focus:border-blue-600 leading-tight" placeholder="" />
             </div>
           </div>
-          <button type="button" onclick="this.closest('.constantes-row').remove()" class="text-red-500 hover:text-red-700 focus:outline-none no-print shrink-0 pb-0.5" title="Eliminar toma">
+          <button type="button" onclick="this.closest('.constantes-row').remove()" class="text-slate-400 hover:text-slate-600 focus:outline-none no-print shrink-0 pb-0.5" title="Eliminar toma">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
@@ -166,6 +181,7 @@ const UI_COMPONENTS = {
             </svg>
           </button>
         </div>
+        <p class="text-[9px] text-slate-500 italic mb-3 leading-tight">${INFO_TESTIGOS_LEGAL}</p>
         <div id="testigos-container" class="space-y-2">
           <div class="flex items-center gap-2 mb-1 testigo-row">
             <div class="flex flex-wrap lg:flex-nowrap gap-2 sm:gap-4 flex-1">
@@ -178,7 +194,7 @@ const UI_COMPONENTS = {
                 <input type="text" class="input-testigo-dni w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="" />
               </div>
             </div>
-            <button type="button" class="invisible text-red-500 focus:outline-none w-4 h-4 mt-4">
+            <button type="button" class="invisible text-slate-400 focus:outline-none w-4 h-4 mt-4">
             </button>
           </div>
         </div>
@@ -194,7 +210,7 @@ const UI_COMPONENTS = {
               <input type="text" class="input-testigo-dni w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="DNI / NIE" />
             </div>
           </div>
-          <button type="button" onclick="this.closest('.testigo-row').remove()" class="text-red-500 hover:text-red-700 focus:outline-none no-print shrink-0" title="Eliminar testigo">
+          <button type="button" onclick="this.closest('.testigo-row').remove()" class="text-slate-400 hover:text-slate-600 focus:outline-none no-print shrink-0" title="Eliminar testigo">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>

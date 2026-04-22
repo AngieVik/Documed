@@ -41,7 +41,7 @@ const DOC_INFORME_MEDICO = {
                 <option value="anestesicos">Anestésicos (generales/locales)</option>
                 <option value="hipouricemiantes">Hipouricemiantes (Alopurinol)</option>
                 <option value="ieca">IECA</option>
-                <option value="opioides_narcoticos">Opioides/Narcóticos</option>
+                <option value="opioides_narcoticos">Opioides</option>
                 <option value="otras">Otras (especificar)</option>
               </select>
               <input type="text" id="input-alergias" list="dl_farmacos" class="flex-1 border-b border-red-300 bg-transparent py-1 text-xs text-red-700 placeholder-red-400/70 focus:outline-none focus:border-red-500" placeholder="Especifique alergias si las hubiera..." />
@@ -93,14 +93,14 @@ const DOC_INFORME_MEDICO = {
             </div>
             <div id="seccion-destino">
               <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Hospital o Centro de destino (si procede)</label>
-              <div class="flex gap-2">
-                <select id="provincia-selector" required onchange="updateHospitalesDatalist()" class="w-1/3 border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 focus:outline-none focus:border-blue-600 invalid:text-slate-400">
+              <div class="flex gap-2"> <select id="provincia-selector" required onchange="updateHospitalesDatalist()" class="w-1/3 border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 focus:outline-none focus:border-blue-600 invalid:text-slate-400">
                   <option value="" disabled selected hidden></option>
                 </select>
-                <input type="text" id="hospital-destino" list="dl_hospitales" class="w-2/3 border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" />
+                <div class="w-2/3 relative">
+                  <input type="text" id="hospital-destino" autocomplete="off" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" />
+                </div>
               </div>
             </div>
-          </div>
         </div>
       `,
       UI_COMPONENTS.firmas("Firma del Paciente", "Facultativo")

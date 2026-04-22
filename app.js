@@ -134,6 +134,7 @@ function initMultiAutocomplete(inputId, database, isMulti = true) {
 
   input.removeAttribute("list");
   
+  // Garantizar que el padre sea relative para anclar el menú sin romper flexbox
   if (input.parentElement && window.getComputedStyle(input.parentElement).position === "static") {
     input.parentElement.style.position = "relative";
   }
@@ -143,52 +144,59 @@ function initMultiAutocomplete(inputId, database, isMulti = true) {
   if (!menu) {
     menu = document.createElement("ul");
     menu.id = menuId;
-    menu.className = "absolute z-50 w-full bg-white border border-slate-300 rounded shadow-lg max-h-40 overflow-y-auto hidden text-xs text-slate-800";
+    // Clases añadidas: top-full left-0 mt-1 para descolgar debajo del input
+    menu.className = "absolute top-full left-0 mt-1 z-50 w-full bg-white border border-slate-300 rounded shadow-lg max-h-40 overflow-y-auto hidden text-xs text-slate-800";
     input.parentNode.insertBefore(menu, input.nextSibling);
   }
 
   let blurTimeout;
 
-  input.addEventListener("input", (e) => {
-    const val = e.target.value;
+  // Extraemos la lógica a una función para poder llamarla al hacer clic o escribir
+  function renderMenu() {
+    const val = input.value;
     const parts = isMulti ? val.split(",") : [val];
     const currentFragment = parts[parts.length - 1].trim();
+    
+    const normalizedFragment = normalizeText(currentFragment);
+    
+    // Si el campo está vacío, mostramos las primeras 50 opciones. Si hay texto, filtramos.
+    let matches = normalizedFragment.length === 0 
+      ? database.slice(0, 50) 
+      : database.filter(item => normalizeText(item).includes(normalizedFragment));
 
-    if (currentFragment.length >= 2) {
-      const normalizedFragment = normalizeText(currentFragment);
-      const matches = database.filter(item => normalizeText(item).includes(normalizedFragment));
-      
-      if (matches.length > 0) {
-        menu.innerHTML = "";
-        matches.forEach(match => {
-          const li = document.createElement("li");
-          li.className = "px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-slate-100 last:border-0";
-          li.textContent = match;
-          
-          li.addEventListener("mousedown", (evt) => {
-            evt.preventDefault();
-          });
-
-          li.addEventListener("click", () => {
-            if (isMulti) {
-              parts[parts.length - 1] = " " + match;
-              input.value = parts.join(",").trim() + ", ";
-            } else {
-              input.value = match;
-            }
-            menu.classList.add("hidden");
-            input.focus();
-          });
-          menu.appendChild(li);
+    if (matches.length > 0) {
+      menu.innerHTML = "";
+      matches.forEach(match => {
+        const li = document.createElement("li");
+        li.className = "px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-slate-100 last:border-0";
+        li.textContent = match;
+        
+        li.addEventListener("mousedown", (evt) => {
+          evt.preventDefault();
         });
-        menu.classList.remove("hidden");
-      } else {
-        menu.classList.add("hidden");
-      }
+
+        li.addEventListener("click", () => {
+          if (isMulti) {
+            parts[parts.length - 1] = " " + match;
+            input.value = parts.join(",").trim() + ", ";
+          } else {
+            input.value = match;
+          }
+          menu.classList.add("hidden");
+          input.focus();
+        });
+        menu.appendChild(li);
+      });
+      menu.classList.remove("hidden");
     } else {
       menu.classList.add("hidden");
     }
-  });
+  }
+
+  // Escuchadores de eventos para desplegar el menú
+  input.addEventListener("input", renderMenu);
+  input.addEventListener("click", renderMenu);
+  input.addEventListener("focus", renderMenu);
 
   input.addEventListener("blur", () => {
     blurTimeout = setTimeout(() => {
@@ -200,27 +208,22 @@ function initMultiAutocomplete(inputId, database, isMulti = true) {
     clearTimeout(blurTimeout);
   });
 }
-
 // ── Datalists (CIE-10, Fármacos, Hospitales) ────────────────────────────
 
 function populateDatalists() {
   const container = document.getElementById("datalists-container");
-  const htmlHospitales = `<datalist id="dl_hospitales"></datalist>`;
-  container.innerHTML = htmlHospitales;
+  container.innerHTML = ""; // Se purga la dependencia del DOM nativo
 }
 
 function updateHospitalesDatalist() {
   const provincia     = document.getElementById("provincia-selector").value;
-  const dlHospitales  = document.getElementById("dl_hospitales");
   const inputHospital = document.getElementById("hospital-destino");
-  dlHospitales.innerHTML = "";
-  inputHospital.value    = "";
+  
+  inputHospital.value = "";
+  
   if (provincia && HOSPITALES_DB[provincia]) {
-    HOSPITALES_DB[provincia].forEach((hospital) => {
-      const opt = document.createElement("option");
-      opt.value = hospital;
-      dlHospitales.appendChild(opt);
-    });
+    // Invoca el motor predictivo: id, base de datos, isMulti = false
+    initMultiAutocomplete("hospital-destino", HOSPITALES_DB[provincia], false);
   }
 }
 

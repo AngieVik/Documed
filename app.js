@@ -64,6 +64,12 @@ function addConstantes() {
   document.getElementById("constantes-container").appendChild(clone);
 }
 
+function addTestigo() {
+  const clone = document.getElementById("testigo-row-template").content.cloneNode(true);
+  document.getElementById("testigos-container").appendChild(clone);
+}
+
+
 function clearReport() {
   if (confirm("¿Borrar todos los datos clínicos?")) {
     document.getElementById("clinical-form").reset();
@@ -104,14 +110,6 @@ function populateDatalists() {
   const htmlHospitales = `<datalist id="dl_hospitales"></datalist>`;
 
   container.innerHTML = htmlCie10 + htmlFarmacos + htmlHospitales;
-
-  const provSelector = document.getElementById("provincia-selector");
-  Object.keys(HOSPITALES_DB).sort().forEach((prov) => {
-    const opt = document.createElement("option");
-    opt.value = prov;
-    opt.textContent = prov;
-    provSelector.appendChild(opt);
-  });
 }
 
 function updateHospitalesDatalist() {
@@ -220,14 +218,39 @@ function getFormData() {
 }
 
 function rebindGlobalEvents() {
+  // 1. Inicializar Datalist de Provincias (si la plantilla lo requiere)
+  const provSelector = document.getElementById("provincia-selector");
+  if (provSelector && provSelector.options.length <= 1) {
+    Object.keys(HOSPITALES_DB).sort().forEach((prov) => {
+      const opt = document.createElement("option");
+      opt.value = prov;
+      opt.textContent = prov;
+      provSelector.appendChild(opt);
+    });
+  }
 
+  // 2. Inicializar Motor de Firmas Biométricas
+  initSignaturePads();
+
+  // 3. Reasignar eventos nativos del DOM
   const checkSinMedico = document.getElementById("check-sin-medico");
   if (checkSinMedico) {
     checkSinMedico.addEventListener("change", (e) => {
       const camposTestigos = document.getElementById("campos-testigos");
-      if (camposTestigos) {
-        if (e.target.checked) camposTestigos.classList.remove("hidden");
-        else camposTestigos.classList.add("hidden");
+      const labelFirmaFacultativo = document.getElementById("label-firma-facultativo");
+      const dispMedico = document.getElementById("disp_medico");
+      const dispColegiadoContainer = document.getElementById("disp_colegiado_container");
+      
+      if (e.target.checked) {
+        if (camposTestigos) camposTestigos.classList.remove("hidden");
+        if (labelFirmaFacultativo) labelFirmaFacultativo.textContent = "Firma Testigos";
+        if (dispMedico) dispMedico.classList.add("hidden");
+        if (dispColegiadoContainer) dispColegiadoContainer.classList.add("hidden");
+      } else {
+        if (camposTestigos) camposTestigos.classList.add("hidden");
+        if (labelFirmaFacultativo) labelFirmaFacultativo.textContent = "Facultativo";
+        if (dispMedico) dispMedico.classList.remove("hidden");
+        if (dispColegiadoContainer) dispColegiadoContainer.classList.remove("hidden");
       }
     });
   }
@@ -257,8 +280,8 @@ function rebindGlobalEvents() {
 
 function getActiveTemplate() {
   const sel = document.getElementById("doc-selector");
-  const id  = sel ? sel.value : "informe_medico";
-  return DOC_TEMPLATES[id] || DOC_TEMPLATES["informe_medico"];
+  if (!sel || !sel.value) return null; // Permite el estado nulo
+  return DOC_TEMPLATES[sel.value];
 }
 
 function switchTemplate() {
@@ -400,10 +423,17 @@ async function generarPDF() {
   const negPropuesta   = getVal("neg-propuesta");
   const negRiesgos     = getVal("neg-riesgos");
   const sinMedico      = formData["check-sin-medico"] || false;
-  const testigo1Nombre = getVal("testigo1-nombre");
-  const testigo1Dni    = getVal("testigo1-dni");
-  const testigo2Nombre = getVal("testigo2-nombre");
-  const testigo2Dni    = getVal("testigo2-dni");
+  
+  // Testigos dinámicos
+  const testigoRows = document.querySelectorAll(".testigo-row");
+  const testigosData = [];
+  testigoRows.forEach((row) => {
+    const nombre = row.querySelector(".input-testigo-nombre")?.value.trim();
+    const dni = row.querySelector(".input-testigo-dni")?.value.trim();
+    if (nombre || dni) {
+      testigosData.push({ nombre, dni });
+    }
+  });
 
   // Construir docDefinition delegando el content a la plantilla activa
   const docDefinition = {
@@ -441,7 +471,7 @@ async function generarPDF() {
       empresa, cif, direccion, medico, colegiado,
       tutorNombre, tutorDni, tutorFirma,
       negSituacion, negPropuesta, negRiesgos,
-      sinMedico, testigo1Nombre, testigo1Dni, testigo2Nombre, testigo2Dni,
+      sinMedico, testigosData,
     }),
   };
 

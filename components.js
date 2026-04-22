@@ -146,6 +146,64 @@ const UI_COMPONENTS = {
     `;
   },
 
+  clausulaLegal(texto) {
+    return `
+      <div class="bg-slate-50 border-l-4 border-slate-500 p-2 mb-3 mt-3 text-[9px] text-justify text-slate-600 leading-tight page-break-avoid">
+        ${texto}
+      </div>
+    `;
+  },
+
+  testigos() {
+    return `
+      <div id="campos-testigos" class="hidden mt-3 bg-slate-100/50 p-3 rounded border border-slate-200 page-break-avoid">
+        <div class="flex justify-between items-center mb-2">
+          <h4 class="text-[10px] font-bold text-slate-600 tracking-wide uppercase">Testigos Sanitarios</h4>
+          <button type="button" onclick="addTestigo()" class="text-blue-600 hover:text-blue-800 focus:outline-none no-print shrink-0 pb-0.5" title="Añadir testigo">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+        <div id="testigos-container" class="space-y-2">
+          <div class="flex items-center gap-2 mb-1 testigo-row">
+            <div class="flex flex-wrap lg:flex-nowrap gap-2 sm:gap-4 flex-1">
+              <div class="flex-1">
+                <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Nombre Testigo</label>
+                <input type="text" class="input-testigo-nombre w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="" />
+              </div>
+              <div class="w-1/3">
+                <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">DNI / NIE</label>
+                <input type="text" class="input-testigo-dni w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="" />
+              </div>
+            </div>
+            <button type="button" class="invisible text-red-500 focus:outline-none w-4 h-4 mt-4">
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <template id="testigo-row-template">
+        <div class="flex items-center gap-2 mb-1 pt-2 border-t border-slate-200 border-dashed testigo-row">
+          <div class="flex flex-wrap lg:flex-nowrap gap-2 sm:gap-4 flex-1">
+            <div class="flex-1">
+              <input type="text" class="input-testigo-nombre w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="Nombre Testigo" />
+            </div>
+            <div class="w-1/3">
+              <input type="text" class="input-testigo-dni w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="DNI / NIE" />
+            </div>
+          </div>
+          <button type="button" onclick="this.closest('.testigo-row').remove()" class="text-red-500 hover:text-red-700 focus:outline-none no-print shrink-0" title="Eliminar testigo">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+      </template>
+    `;
+  },
+
   firmas(labelPaciente, labelFacultativo) {
     return `
       <div id="firmas" class="section-block mt-6 pt-4 border-t border-slate-200 page-break-avoid">
@@ -165,7 +223,7 @@ const UI_COMPONENTS = {
             <div class="mb-2 h-4 flex items-baseline gap-1 whitespace-nowrap overflow-hidden">
               <span id="label-firma-facultativo" class="text-[10px] font-bold text-slate-800 tracking-wide">${labelFacultativo}</span>
               <span class="text-[9px] text-slate-600 font-semibold truncate" id="disp_medico"></span>
-              <span class="text-[8px] text-slate-500 ml-0.5">(Nº Col: <span id="disp_colegiado"></span>)</span>
+              <span class="text-[8px] text-slate-500 ml-0.5" id="disp_colegiado_container">(Nº Col: <span id="disp_colegiado"></span>)</span>
             </div>
             <div class="border border-slate-300 rounded bg-white h-20 relative flex items-center justify-center overflow-hidden">
               <span class="absolute text-[10px] text-slate-300 italic text-center px-4 pointer-events-none select-none z-0">El documento será firmado digitalmente.</span>

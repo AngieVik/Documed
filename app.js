@@ -121,22 +121,92 @@ function appendTratamiento() {
   farmaco.focus();
 }
 
+// ── Motor de Autocompletado Predictivo ────────────────────────────────────
+
+function normalizeText(text) {
+  if (!text) return "";
+  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function initMultiAutocomplete(inputId, database, isMulti = true) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+
+  input.removeAttribute("list");
+  
+  if (input.parentElement && window.getComputedStyle(input.parentElement).position === "static") {
+    input.parentElement.style.position = "relative";
+  }
+
+  const menuId = `ac-menu-${inputId}`;
+  let menu = document.getElementById(menuId);
+  if (!menu) {
+    menu = document.createElement("ul");
+    menu.id = menuId;
+    menu.className = "absolute z-50 w-full bg-white border border-slate-300 rounded shadow-lg max-h-40 overflow-y-auto hidden text-xs text-slate-800";
+    input.parentNode.insertBefore(menu, input.nextSibling);
+  }
+
+  let blurTimeout;
+
+  input.addEventListener("input", (e) => {
+    const val = e.target.value;
+    const parts = isMulti ? val.split(",") : [val];
+    const currentFragment = parts[parts.length - 1].trim();
+
+    if (currentFragment.length >= 2) {
+      const normalizedFragment = normalizeText(currentFragment);
+      const matches = database.filter(item => normalizeText(item).includes(normalizedFragment));
+      
+      if (matches.length > 0) {
+        menu.innerHTML = "";
+        matches.forEach(match => {
+          const li = document.createElement("li");
+          li.className = "px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-slate-100 last:border-0";
+          li.textContent = match;
+          
+          li.addEventListener("mousedown", (evt) => {
+            evt.preventDefault();
+          });
+
+          li.addEventListener("click", () => {
+            if (isMulti) {
+              parts[parts.length - 1] = " " + match;
+              input.value = parts.join(",").trim() + ", ";
+            } else {
+              input.value = match;
+            }
+            menu.classList.add("hidden");
+            input.focus();
+          });
+          menu.appendChild(li);
+        });
+        menu.classList.remove("hidden");
+      } else {
+        menu.classList.add("hidden");
+      }
+    } else {
+      menu.classList.add("hidden");
+    }
+  });
+
+  input.addEventListener("blur", () => {
+    blurTimeout = setTimeout(() => {
+      menu.classList.add("hidden");
+    }, 150);
+  });
+
+  input.addEventListener("focus", () => {
+    clearTimeout(blurTimeout);
+  });
+}
+
 // ── Datalists (CIE-10, Fármacos, Hospitales) ────────────────────────────
 
 function populateDatalists() {
   const container = document.getElementById("datalists-container");
-
-  let htmlCie10 = `<datalist id="dl_cie10">`;
-  CIE10_DB.forEach((item) => (htmlCie10 += `<option value="${item}">`));
-  htmlCie10 += `</datalist>`;
-
-  let htmlFarmacos = `<datalist id="dl_farmacos">`;
-  FARMACOS_DB.forEach((item) => (htmlFarmacos += `<option value="${item}">`));
-  htmlFarmacos += `</datalist>`;
-
   const htmlHospitales = `<datalist id="dl_hospitales"></datalist>`;
-
-  container.innerHTML = htmlCie10 + htmlFarmacos + htmlHospitales;
+  container.innerHTML = htmlHospitales;
 }
 
 function updateHospitalesDatalist() {
@@ -316,6 +386,11 @@ function rebindGlobalEvents() {
       }
     });
   }
+
+  // 4. Autocompletado Predictivo
+  initMultiAutocomplete("diagnostico", CIE10_DB, true);
+  initMultiAutocomplete("input-alergias", FARMACOS_DB, true);
+  initMultiAutocomplete("farmaco-input", FARMACOS_DB, false);
 }
 
 // ── Selector de plantilla ────────────────────────────────────────────────

@@ -32,6 +32,16 @@ const DOC_INFORME_MEDICO = {
                 <option value="aines">AINEs</option>
                 <option value="quimioterapicos">Quimioterápicos</option>
                 <option value="antiepilepticos">Antiepilépticos</option>
+                <option value="sulfamidas">Sulfamidas</option>
+                <option value="quinolonas">Quinolonas</option>
+                <option value="macrolidos">Macrólidos</option>
+                <option value="medios_de_contraste">Medios de Contraste</option>
+                <option value="biologicos_y_mabs">Biologicos y Mabs</option>
+                <option value="bloqueantes_neuromusculares">Bloqueantes neuromusculares</option>
+                <option value="anestesicos">Anestésicos (generales/locales)</option>
+                <option value="hipouricemiantes">Hipouricemiantes (Alopurinol)</option>
+                <option value="ieca">IECA</option>
+                <option value="opioides_narcoticos">Opioides/Narcóticos</option>
                 <option value="otras">Otras (especificar)</option>
               </select>
               <input type="text" id="input-alergias" list="dl_farmacos" class="flex-1 border-b border-red-300 bg-transparent py-1 text-xs text-red-700 placeholder-red-400/70 focus:outline-none focus:border-red-500" placeholder="Especifique alergias si las hubiera..." />

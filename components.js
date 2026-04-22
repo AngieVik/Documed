@@ -6,7 +6,7 @@ const CLAUSULA_LEGAL_PDF = [
   { text: "CLÁUSULA LEGAL", bold: true },
   { text: " (" },
   { text: "Ley 41/2002", bold: true },
-  { text: " de Autonomía del Paciente)\\nEl/la paciente identificado/a supra, en pleno uso de sus facultades y tras haber sido debidamente informado/a de su situación clínica, de las actuaciones propuestas por el equipo sanitario y de las posibles consecuencias derivadas de su no aceptación, " },
+  { text: " de Autonomía del Paciente)\nEl/la paciente identificado/a supra, en pleno uso de sus facultades y tras haber sido debidamente informado/a de su situación clínica, de las actuaciones propuestas por el equipo sanitario y de las posibles consecuencias derivadas de su no aceptación, " },
   { text: "DECLARA EXPRESAMENTE", bold: true },
   { text: " su negativa a recibir el tratamiento o traslado indicado, ejerciendo el derecho reconocido en el artículo 2.4 de la " },
   { text: "Ley 41/2002", bold: true },
@@ -169,6 +169,38 @@ const UI_COMPONENTS = {
     `;
   },
 
+  filaTestigo(index) {
+    return `
+      <div class="flex flex-col gap-2 mb-3 pt-3 border-t border-slate-200 border-dashed testigo-row">
+        <div class="flex justify-between items-end gap-4">
+          <div class="flex-1">
+            <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Nombre Testigo</label>
+            <input type="text" class="input-testigo-nombre w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="" />
+          </div>
+          <div class="w-1/3">
+            <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">DNI / NIE</label>
+            <input type="text" class="input-testigo-dni w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="" />
+          </div>
+          <button type="button" onclick="removeTestigo(this, ${index})" class="text-slate-400 hover:text-slate-600 focus:outline-none no-print shrink-0 pb-1" title="Eliminar testigo">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="mt-2 relative">
+          <div class="flex justify-between items-center mb-1">
+            <label class="block text-[10px] font-bold text-slate-500 tracking-wide">Firma del Testigo</label>
+          </div>
+          <div class="border border-slate-300 rounded bg-white h-20 relative flex items-center justify-center overflow-hidden">
+             <span class="absolute text-[10px] text-slate-300 italic text-center px-4 pointer-events-none select-none z-0">Firma en este recuadro.</span>
+             <canvas id="canvas-testigo-${index}" class="w-full h-full rounded cursor-crosshair relative z-10 bg-transparent"></canvas>
+             <button type="button" class="absolute top-1 right-1 text-[8px] bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded shadow-sm z-20 no-print" onclick="clearTestigoSignature(${index})">Borrar</button>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
   testigos() {
     return `
       <div id="campos-testigos" class="hidden mt-3 bg-slate-100/50 p-3 rounded border border-slate-200 page-break-avoid">
@@ -183,40 +215,8 @@ const UI_COMPONENTS = {
         </div>
         <p class="text-[9px] text-slate-500 italic mb-3 leading-tight">${INFO_TESTIGOS_LEGAL}</p>
         <div id="testigos-container" class="space-y-2">
-          <div class="flex items-center gap-2 mb-1 testigo-row">
-            <div class="flex flex-wrap lg:flex-nowrap gap-2 sm:gap-4 flex-1">
-              <div class="flex-1">
-                <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Nombre Testigo</label>
-                <input type="text" class="input-testigo-nombre w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="" />
-              </div>
-              <div class="w-1/3">
-                <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">DNI / NIE</label>
-                <input type="text" class="input-testigo-dni w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="" />
-              </div>
-            </div>
-            <button type="button" class="invisible text-slate-400 focus:outline-none w-4 h-4 mt-4">
-            </button>
-          </div>
         </div>
       </div>
-      
-      <template id="testigo-row-template">
-        <div class="flex items-center gap-2 mb-1 pt-2 border-t border-slate-200 border-dashed testigo-row">
-          <div class="flex flex-wrap lg:flex-nowrap gap-2 sm:gap-4 flex-1">
-            <div class="flex-1">
-              <input type="text" class="input-testigo-nombre w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="Nombre Testigo" />
-            </div>
-            <div class="w-1/3">
-              <input type="text" class="input-testigo-dni w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="DNI / NIE" />
-            </div>
-          </div>
-          <button type="button" onclick="this.closest('.testigo-row').remove()" class="text-slate-400 hover:text-slate-600 focus:outline-none no-print shrink-0" title="Eliminar testigo">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-          </button>
-        </div>
-      </template>
     `;
   },
 

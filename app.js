@@ -65,8 +65,33 @@ function addConstantes() {
 }
 
 function addTestigo() {
-  const clone = document.getElementById("testigo-row-template").content.cloneNode(true);
-  document.getElementById("testigos-container").appendChild(clone);
+  if (typeof window.testigoCounter === "undefined") window.testigoCounter = 0;
+  if (!window.testigosPads) window.testigosPads = [];
+  
+  const index = window.testigoCounter++;
+  const container = document.getElementById("testigos-container");
+  container.insertAdjacentHTML('beforeend', UI_COMPONENTS.filaTestigo(index));
+  
+  const canvas = document.getElementById(`canvas-testigo-${index}`);
+  const pad = new SignaturePad(canvas, { penColor: "rgb(15,23,42)", minWidth: 0.8, maxWidth: 2.5 });
+  
+  window.testigosPads.push({ index, pad, canvas });
+  
+  resizeCanvas(canvas, pad);
+}
+
+function removeTestigo(btn, index) {
+  btn.closest('.testigo-row').remove();
+  if (window.testigosPads) {
+    window.testigosPads = window.testigosPads.filter(t => t.index !== index);
+  }
+}
+
+function clearTestigoSignature(index) {
+  if (window.testigosPads) {
+    const tp = window.testigosPads.find(t => t.index === index);
+    if (tp && tp.pad) tp.pad.clear();
+  }
 }
 
 
@@ -76,6 +101,8 @@ function clearReport() {
     document
       .querySelectorAll("#constantes-container .constantes-row:not(:first-of-type)")
       .forEach((row) => row.remove());
+    document.querySelectorAll(".testigo-row").forEach(row => row.remove());
+    if (window.testigosPads) window.testigosPads = [];
     document.querySelectorAll("textarea").forEach((ta) => (ta.style.height = "auto"));
     setDefaultDateTime();
   }
@@ -149,16 +176,31 @@ function initSignaturePads() {
   const canvasPaciente = document.getElementById("canvas-paciente");
   const canvasMedico   = document.getElementById("canvas-medico");
 
-  window.padPaciente = new SignaturePad(canvasPaciente, { penColor: "rgb(15,23,42)", minWidth: 0.8, maxWidth: 2.5 });
-  window.padMedico   = new SignaturePad(canvasMedico,   { penColor: "rgb(15,23,42)", minWidth: 0.8, maxWidth: 2.5 });
+  if (canvasPaciente) window.padPaciente = new SignaturePad(canvasPaciente, { penColor: "rgb(15,23,42)", minWidth: 0.8, maxWidth: 2.5 });
+  if (canvasMedico) window.padMedico   = new SignaturePad(canvasMedico,   { penColor: "rgb(15,23,42)", minWidth: 0.8, maxWidth: 2.5 });
 
-  resizeCanvas(canvasPaciente, window.padPaciente);
-  resizeCanvas(canvasMedico,   window.padMedico);
+  if (canvasPaciente) resizeCanvas(canvasPaciente, window.padPaciente);
+  if (canvasMedico) resizeCanvas(canvasMedico,   window.padMedico);
 
-  window.addEventListener("resize", () => {
-    resizeCanvas(canvasPaciente, window.padPaciente);
-    resizeCanvas(canvasMedico,   window.padMedico);
-  });
+  window.testigosPads = [];
+  window.testigoCounter = 0;
+
+  if (!window.resizeListenerAdded) {
+    window.addEventListener("resize", () => {
+      const cp = document.getElementById("canvas-paciente");
+      const cm = document.getElementById("canvas-medico");
+      if (cp && window.padPaciente) resizeCanvas(cp, window.padPaciente);
+      if (cm && window.padMedico) resizeCanvas(cm, window.padMedico);
+      if (window.testigosPads) {
+        window.testigosPads.forEach(t => {
+          if (t.canvas && document.body.contains(t.canvas)) {
+            resizeCanvas(t.canvas, t.pad);
+          }
+        });
+      }
+    });
+    window.resizeListenerAdded = true;
+  }
 }
 
 // ── Lógica de Tutor Legal ────────────────────────────────────────────────
@@ -430,8 +472,18 @@ async function generarPDF() {
   testigoRows.forEach((row) => {
     const nombre = row.querySelector(".input-testigo-nombre")?.value.trim();
     const dni = row.querySelector(".input-testigo-dni")?.value.trim();
-    if (nombre || dni) {
-      testigosData.push({ nombre, dni });
+    
+    let firmaContent = null;
+    const canvas = row.querySelector("canvas");
+    if (canvas && window.testigosPads) {
+      const match = window.testigosPads.find(t => t.canvas === canvas);
+      if (match && match.pad && !match.pad.isEmpty()) {
+        firmaContent = match.pad.toDataURL("image/png");
+      }
+    }
+    
+    if (nombre || dni || firmaContent) {
+      testigosData.push({ nombre, dni, firmaContent });
     }
   });
 

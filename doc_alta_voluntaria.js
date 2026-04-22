@@ -21,21 +21,21 @@ const DOC_ALTA_VOLUNTARIA = {
           <h3 class="text-xs font-bold text-slate-800 tracking-wider mb-3 uppercase">DECLARACIÓN DE ALTA VOLUNTARIA / NEGATIVA</h3>
           <div class="space-y-3">
             <div>
-              <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Situación Clínica Actual</label>
+              <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Situación Clínica</label>
               <textarea id="neg-situacion" rows="2" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="" oninput="autoResize(this)"></textarea>
             </div>
             <div>
-              <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Propuesta Facultativa Rechazada</label>
+              <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Propuesta Asistencial Rechazada</label>
               <textarea id="neg-propuesta" rows="2" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="" oninput="autoResize(this)"></textarea>
             </div>
             <div>
-              <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Riesgos Advertidos al Paciente</label>
+              <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Riesgos Advertidos</label>
               <textarea id="neg-riesgos" rows="2" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="" oninput="autoResize(this)"></textarea>
             </div>
             <div class="mt-4 pt-2 border-t border-slate-200">
               <label class="flex items-center gap-2 cursor-pointer select-none">
                 <input type="checkbox" id="check-sin-medico" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-                <span class="text-xs font-semibold text-slate-800">Sin facultativo presente (Testigos sanitarios)</span>
+                <span class="text-xs font-semibold text-slate-800">Sin facultativo presente (Testigos Sanitarios)</span>
               </label>
             </div>
           </div>
@@ -43,7 +43,7 @@ const DOC_ALTA_VOLUNTARIA = {
       `,
       UI_COMPONENTS.testigos(),
       UI_COMPONENTS.clausulaLegal(CLAUSULA_LEGAL_HTML),
-      UI_COMPONENTS.firmas("Firma del Paciente", "Facultativo")
+      UI_COMPONENTS.firmas("Firma del Paciente", "Facultativo"),
     ];
   },
 
@@ -177,18 +177,60 @@ const DOC_ALTA_VOLUNTARIA = {
             color: "#475569",
             margin: [0, 4, 0, 10],
           },
-          ...(testigosData && testigosData.length > 0 
-            ? testigosData.map(t => ({
+          ...(testigosData && testigosData.length > 0
+            ? testigosData.map((t) => ({
                 stack: [
-                  { text: `Testigo: ${t.nombre || "—"} (DNI: ${t.dni || "—"})`, fontSize: 8, margin: [0, 6, 0, 20] },
                   {
-                    canvas: [{ type: "line", x1: 0, y1: 0, x2: 220, y2: 0, lineWidth: 0.5, lineColor: "#94a3b8" }],
-                    margin: [0, 0, 0, 2]
+                    text: `Testigo: ${t.nombre || "—"} (DNI: ${t.dni || "—"})`,
+                    fontSize: 8,
+                    margin: [0, 6, 0, 10],
                   },
-                  { text: "Firma", fontSize: 7, color: "#6b7280", italics: true, margin: [0, 0, 0, 10] }
-                ]
+                  t.firmaContent
+                    ? {
+                        image: t.firmaContent,
+                        width: 200,
+                        height: 60,
+                        margin: [0, 0, 0, 0],
+                      }
+                    : {
+                        text: "(Firma pendiente)",
+                        italics: true,
+                        fontSize: 8,
+                        color: "#94a3b8",
+                        margin: [0, 15, 0, 15],
+                      },
+                  {
+                    canvas: [
+                      {
+                        type: "line",
+                        x1: 0,
+                        y1: 0,
+                        x2: 220,
+                        y2: 0,
+                        lineWidth: 0.5,
+                        lineColor: "#94a3b8",
+                      },
+                    ],
+                    margin: [0, 2, 0, 2],
+                  },
+                  {
+                    text: "Firma",
+                    fontSize: 7,
+                    color: "#6b7280",
+                    italics: true,
+                    margin: [0, 0, 0, 10],
+                  },
+                ],
               }))
-            : [{ text: "Sin testigos especificados", italics: true, fontSize: 8, color: "#94a3b8" }])
+            : [
+                {
+                  text: "Sin testigos especificados",
+                  italics: true,
+                  fontSize: 8,
+                  color: "#94a3b8",
+                  margin: [0, 10, 0, 0],
+                },
+              ]),
         ],
       };
     } else {
@@ -325,21 +367,21 @@ const DOC_ALTA_VOLUNTARIA = {
       {
         margin: [0, 4, 0, 4],
         stack: [
-          { text: "Situación Clínica Actual", style: "labelKey" },
+          { text: "Situación Clínica", style: "labelKey" },
           { text: negSituacion || "—", style: "labelVal" },
         ],
       },
       {
         margin: [0, 0, 0, 4],
         stack: [
-          { text: "Propuesta Facultativa Rechazada", style: "labelKey" },
+          { text: "Propuesta Asistencial Rechazada", style: "labelKey" },
           { text: negPropuesta || "—", style: "labelVal" },
         ],
       },
       {
         margin: [0, 0, 0, 8],
         stack: [
-          { text: "Riesgos Advertidos al Paciente", style: "labelKey" },
+          { text: "Riesgos Advertidos", style: "labelKey" },
           { text: negRiesgos || "—", style: "labelVal" },
         ],
       },
@@ -360,7 +402,7 @@ const DOC_ALTA_VOLUNTARIA = {
         margin: [0, 4, 0, 6],
       },
       {
-        fontSize: 9,
+        fontSize: 7,
         lineHeight: 1.2,
         alignment: "justify",
         margin: [0, 6, 0, 8],

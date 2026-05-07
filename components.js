@@ -239,7 +239,9 @@ const UI_COMPONENTS = {
 
   // ── Firmas Biométricas ──────────────────────────────────────────────────
   // Grid 1 col → 2 cols en xs (360px+)
-  firmas(labelPaciente, labelFacultativo) {
+  // labelFacultativo ya no se muestra como texto estático: se usa disp_medico (config)
+  // o los campos manuales input_firma_nombre/input_firma_num (sin config).
+  firmas(labelPaciente) {
     return `
       <div id="firmas" class="section-block mt-4 pt-3 border-t border-slate-200 page-break-avoid">
         <div class="grid grid-cols-1 xs:grid-cols-2 gap-3">
@@ -255,10 +257,19 @@ const UI_COMPONENTS = {
           </div>
 
           <div class="flex flex-col">
-            <div class="mb-1 flex items-baseline gap-1 whitespace-nowrap overflow-hidden">
-              <span id="label-firma-facultativo" class="text-[10px] font-semibold text-slate-700 tracking-wide">${labelFacultativo}</span>
-              <span class="text-[9px] text-slate-600 font-semibold truncate" id="disp_medico"></span>
-              <span class="text-[8px] text-slate-500 ml-0.5" id="disp_colegiado_container">(Nº Col: <span id="disp_colegiado"></span>)</span>
+            <div class="mb-1">
+              <!-- Datos de config (visibles cuando hay configuración guardada) -->
+              <div id="disp_firma_info" class="hidden flex items-baseline gap-1 flex-wrap overflow-hidden">
+                <span class="text-[9px] text-slate-600 font-semibold truncate" id="disp_medico"></span>
+                <span class="text-[8px] text-slate-500" id="disp_colegiado_container">(<span id="disp_colegiado"></span>)</span>
+              </div>
+              <!-- Inputs manuales (visibles cuando NO hay configuración) -->
+              <div id="firma-manual-inputs" class="flex gap-1 no-print">
+                <input type="text" id="input_firma_nombre" placeholder="Nombre del facultativo / diplomado/a"
+                  class="flex-1 border-b border-slate-200 bg-transparent py-0.5 text-xs text-slate-800 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
+                <input type="text" id="input_firma_num" placeholder="Nº Col./Dip."
+                  class="w-20 border-b border-slate-200 bg-transparent py-0.5 text-xs text-slate-800 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
+              </div>
             </div>
             <div class="border border-slate-200 rounded bg-white h-16 relative flex items-center justify-center overflow-hidden">
               <span class="absolute text-[10px] text-slate-300 italic text-center px-4 pointer-events-none select-none z-0">El documento será firmado digitalmente.</span>

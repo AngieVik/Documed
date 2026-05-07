@@ -49,6 +49,16 @@ function loadConfigToReport() {
   if (!localStorage.getItem("documed_empresa"))
     document.getElementById("disp_empresa").innerHTML =
       '<span class="text-red-500 no-print">⚠️ Configure los datos</span>';
+
+  // Cabecera de firma: mostrar config guardada o inputs manuales
+  const hasMedico = !!localStorage.getItem("documed_medico");
+  const dispInfo  = document.getElementById("disp_firma_info");
+  const manualInputs = document.getElementById("firma-manual-inputs");
+  if (dispInfo)      dispInfo.classList.toggle("hidden", !hasMedico);
+  if (manualInputs)  manualInputs.classList.toggle("hidden", hasMedico);
+  // Actualizar colegiado en el span correcto (sin el prefijo "Nº Col:" estático)
+  const dispCol = document.getElementById("disp_colegiado");
+  if (dispCol) dispCol.textContent = localStorage.getItem("documed_colegiado") || "";
 }
 
 // ── Formulario clínico ───────────────────────────────────────────────────
@@ -529,6 +539,10 @@ async function generarPDF() {
   const medico    = localStorage.getItem("documed_medico")    || "";
   const colegiado = localStorage.getItem("documed_colegiado") || "";
 
+  // Campos manuales de firma (visibles cuando no hay config guardada)
+  const firmaNombre = (document.getElementById("input_firma_nombre")?.value || "").trim();
+  const firmaNum    = (document.getElementById("input_firma_num")?.value    || "").trim();
+
   // Firmas
   const firmaPacienteContent =
     window.padPaciente && !window.padPaciente.isEmpty()
@@ -600,7 +614,7 @@ async function generarPDF() {
       tratamiento, diagnostico, planActuacion, hospitalDestino,
       constantesData,
       firmaPacienteContent, firmaMedicoContent,
-      empresa, cif, direccion, medico, colegiado,
+      empresa, cif, direccion, medico, colegiado, firmaNombre, firmaNum,
       tutorNombre, tutorDni, tutorFirma,
       negSituacion, negPropuesta, negRiesgos,
       sinMedico, testigosData,

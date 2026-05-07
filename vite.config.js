@@ -1,6 +1,22 @@
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// vfs_fonts.js usa 'this.pdfMake = ...' (UMD global). En ESM strict, 'this' es undefined.
+// Este plugin transforma el archivo en ambos modos (dev+build) para añadir export default.
+// En dev: el esbuild plugin (optimizeDeps.esbuildOptions.plugins) transforma vfs_fonts.
+// En build: Rollup no usa esbuild, por eso apply:'build' evita duplicar el export default.
+const vfsFontsPlugin = {
+  name: 'vfs-fonts-esm',
+  apply: 'build',
+  transform(code, id) {
+    if (!id.includes('vfs_fonts')) return null;
+    return {
+      code: `var __vfs = {};\n${code.replace(/\bthis\b/g, '__vfs')}\nexport default __vfs;`,
+      map: null,
+    };
+  },
+};
+
 export default defineConfig({
   build: {
     chunkSizeWarningLimit: 5000,
@@ -10,8 +26,27 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: ['pdfmake/build/pdfmake', 'pdfmake/build/vfs_fonts'],
+    // Plugin esbuild para el pre-bundling de dev: misma transformación que vfsFontsPlugin para Rollup
+    esbuildOptions: {
+      plugins: [
+        {
+          name: 'vfs-fonts-esm-esbuild',
+          setup(build) {
+            build.onLoad({ filter: /vfs_fonts\.js$/ }, async (args) => {
+              const { readFileSync } = await import('fs');
+              const code = readFileSync(args.path, 'utf-8');
+              return {
+                contents: `var __vfs = {};\n${code.replace(/\bthis\b/g, '__vfs')}\nexport default __vfs;\n`,
+                loader: 'js',
+              };
+            });
+          },
+        },
+      ],
+    },
   },
   plugins: [
+    vfsFontsPlugin,
     VitePWA({
       registerType: 'autoUpdate',
       strategies: 'generateSW',

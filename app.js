@@ -1,9 +1,11 @@
 // =========================================================================
 // app.js — DocuMed · Lógica de Aplicación
-// Depende de: data.js (CIE10_DB, FARMACOS_DB, HOSPITALES_DB)
-//             templates.js (DOC_TEMPLATES)
-//             SignaturePad (CDN), pdfmake (CDN)
 // =========================================================================
+import SignaturePad from 'signature_pad';
+import pdfMake from 'pdfmake/build/pdfmake';
+import { CIE10_DB, FARMACOS_DB, HOSPITALES_DB } from './data.js';
+import { DOC_TEMPLATES } from './templates.js';
+import { UI_COMPONENTS } from './components.js';
 
 // ── Utilidades UI ────────────────────────────────────────────────────────
 
@@ -646,8 +648,17 @@ window.onload = () => {
 
   switchTemplate(); // Renderizado inicial
 
-  // Service Worker (PWA offline)
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("sw.js");
-  }
 };
+
+// Funciones llamadas desde atributos onclick/oninput en templates HTML.
+// En módulos ES, las declaraciones function son scope del módulo (no globales),
+// por lo que deben asignarse explícitamente a window para que los handlers inline las encuentren.
+window.autoResize              = autoResize;
+window.saveConfig              = saveConfig;
+window.addConstantes           = addConstantes;
+window.addTestigo              = addTestigo;
+window.removeTestigo           = removeTestigo;
+window.clearTestigoSignature   = clearTestigoSignature;
+window.clearSignature          = clearSignature;
+window.appendTratamiento       = appendTratamiento;
+window.updateHospitalesDatalist = updateHospitalesDatalist;

@@ -1,3 +1,5 @@
+import { UI_COMPONENTS, CLAUSULA_LEGAL_HTML, CLAUSULA_LEGAL_PDF, INFO_TESTIGOS_LEGAL } from './components.js';
+
 const DOC_ALTA_VOLUNTARIA = {
   id: "alta_voluntaria",
   label: "Alta Voluntaria / Negativa",
@@ -458,3 +460,5 @@ const DOC_ALTA_VOLUNTARIA = {
     ];
   },
 };
+
+export { DOC_ALTA_VOLUNTARIA };

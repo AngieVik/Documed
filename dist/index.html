@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Informe Clínico Extrahospitalario</title>
+    <!-- PWA -->
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <!-- Roboto Condensed — tipografía clínica de alta densidad -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+    <style>
+      /* Estilos específicos para la generación del PDF/Impresión */
+      @media print {
+        @page {
+          margin: 1cm;
+          @bottom-right {
+            content: "Página " counter(page) " de " counter(pages);
+            font-family:
+              ui-sans-serif,
+              system-ui,
+              -apple-system,
+              sans-serif;
+            font-size: 8pt;
+            color: #64748b;
+          }
+        }
+        .no-print {
+          display: none !important;
+        }
+        body {
+          background-color: white;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+          font-size: 9pt;
+        }
+
+        /* Eliminación estricta de Placeholders en impresión */
+        input::-moz-placeholder, textarea::-moz-placeholder {
+          color: transparent !important;
+          opacity: 0 !important;
+        }
+        input::placeholder,
+        textarea::placeholder {
+          color: transparent !important;
+          opacity: 0 !important;
+        }
+        ::-webkit-input-placeholder {
+          color: transparent !important;
+          opacity: 0 !important;
+        }
+        :-moz-placeholder {
+          color: transparent !important;
+          opacity: 0 !important;
+        }
+        ::-moz-placeholder {
+          color: transparent !important;
+          opacity: 0 !important;
+        }
+        :-ms-input-placeholder {
+          color: transparent !important;
+          opacity: 0 !important;
+        }
+
+        /* Neutralización de cajas y fondos para ahorro de espacio/tinta */
+        .bg-slate-50,
+        .bg-sky-50\/40,
+        .bg-sky-50\/60,
+        .bg-sky-50\/70,
+        .bg-slate-50\/50,
+        .bg-slate-50\/60 {
+          background-color: transparent !important;
+          padding-left: 0 !important;
+          padding-right: 0 !important;
+        }
+
+        .text-sm {
+          font-size: 8.5pt !important;
+          line-height: 1.1 !important;
+        }
+        .text-xs {
+          font-size: 7.5pt !important;
+          line-height: 1.1 !important;
+        }
+        .text-2xl {
+          font-size: 14pt !important;
+        }
+
+        .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+          margin-top: 0.5rem !important;
+        }
+        .mb-2,
+        .mb-3 {
+          margin-bottom: 0.25rem !important;
+        }
+
+        .print-border-none {
+          border: none !important;
+          box-shadow: none !important;
+        }
+
+        input,
+        textarea,
+        select {
+          border: none !important;
+          background: transparent !important;
+          resize: none;
+          appearance: none !important;
+          -moz-appearance: none !important;
+          -webkit-appearance: none !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          color: black !important;
+        }
+
+        select::-ms-expand {
+          display: none;
+        }
+        textarea {
+          height: auto !important;
+          overflow: hidden !important;
+        }
+
+        .page-break-avoid {
+          page-break-inside: avoid !important;
+          -moz-column-break-inside: avoid !important;
+               break-inside: avoid !important;
+        }
+
+        textarea,
+        .constantes-row,
+        .grid > div {
+          page-break-inside: avoid !important;
+          -moz-column-break-inside: avoid !important;
+               break-inside: avoid !important;
+        }
+
+        h3,
+        label,
+        .titulo-seccion {
+          page-break-after: avoid !important;
+          -moz-column-break-after: avoid !important;
+               break-after: avoid !important;
+        }
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index-Dl1OZ9Kh.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-0LD5v-up.css">
+  <link rel="manifest" href="/manifest.webmanifest"></head>
+  <body class="bg-slate-50 text-slate-800 font-sans antialiased pb-16">
+
+    <!-- ── Barra de Navegación ─────────────────────────────────────────── -->
+    <nav class="fixed top-0 w-full bg-slate-900 text-slate-300 flex justify-between items-center px-2 sm:px-3 py-1.5 z-50 no-print shadow-md">
+      <div class="font-bold text-white text-[10px] tracking-wider shrink-0">
+        DocuMed <span class="text-slate-500 font-normal">v1.5</span>
+      </div>
+
+      <div class="flex items-center gap-0.5 sm:gap-1">
+        <!-- Selector de plantilla -->
+        <select
+          id="doc-selector"
+          class="w-28 xs:w-32 sm:w-auto truncate bg-slate-800 border border-slate-700 text-slate-200 text-[10px] rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer mr-1"
+          title="Tipo de documento"
+        >
+          <option value="" selected>Seleccionar...</option>
+          <option value="informe_medico">Informe Médico</option>
+          <option value="alta_voluntaria">Alta Voluntaria / Negativa</option>
+        </select>
+
+        <!-- Instrucciones -->
+        <button id="btn-info"
+          class="flex items-center gap-1 hover:text-white transition-colors text-xs px-1.5 py-1 rounded hover:bg-slate-800"
+          title="Instrucciones">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span class="hidden sm:inline text-[10px]">Info</span>
+        </button>
+
+        <!-- Configuración -->
+        <button id="btn-config"
+          class="flex items-center gap-1 hover:text-white transition-colors text-xs px-1.5 py-1 rounded hover:bg-slate-800"
+          title="Configuración">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <span class="hidden sm:inline text-[10px]">Config</span>
+        </button>
+
+        <!-- Informe -->
+        <button id="btn-report"
+          class="flex items-center gap-1 hover:text-white transition-colors text-xs px-1.5 py-1 rounded hover:bg-slate-800"
+          title="Informe">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          <span class="hidden sm:inline text-[10px]">Informe</span>
+        </button>
+
+        <!-- Borrar -->
+        <button id="btn-clear"
+          class="flex items-center gap-1 text-red-400 hover:text-red-300 transition-colors text-xs px-1.5 py-1 rounded hover:bg-slate-800"
+          title="Borrar todo">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          <span class="hidden sm:inline text-[10px]">Borrar</span>
+        </button>
+
+        <!-- Guardar PDF — acción primaria -->
+        <button id="btn-print"
+          class="flex items-center gap-1 bg-sky-600 text-white hover:bg-sky-500 active:bg-sky-700 transition-colors text-xs px-2 py-1 rounded shadow ml-1"
+          title="Guardar PDF">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          <span class="text-[10px]">PDF</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Espaciador para compensar nav fijo -->
+    <div class="h-10 no-print"></div>
+
+    <!-- ── Vista: Configuración ──────────────────────────────────────────── -->
+    <div
+      id="config-view"
+      class="hidden max-w-2xl mx-auto mt-3 p-3 sm:p-5 bg-white rounded-lg shadow-sm border border-slate-100 no-print"
+    >
+      <h2 class="text-sm font-semibold border-b border-slate-100 pb-2 mb-3 text-slate-700 tracking-wide">
+        Configuración de Empresa y Facultativo
+      </h2>
+      <p class="text-[10px] text-slate-400 mb-3">Datos persistentes en este dispositivo.</p>
+
+      <form id="config-form">
+        <div class="grid grid-cols-1 xs:grid-cols-2 gap-x-4 gap-y-3">
+          <div class="xs:col-span-2">
+            <label class="block text-[10px] font-semibold text-slate-500 tracking-wide mb-0.5">Razón Social / Nombre de Empresa</label>
+            <input type="text" id="cfg_empresa" class="w-full border-b border-slate-200 bg-transparent py-0.5 text-xs text-slate-800 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
+          </div>
+          <div>
+            <label class="block text-[10px] font-semibold text-slate-500 tracking-wide mb-0.5">CIF / NIF Empresa</label>
+            <input type="text" id="cfg_cif" class="w-full border-b border-slate-200 bg-transparent py-0.5 text-xs text-slate-800 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
+          </div>
+          <div>
+            <label class="block text-[10px] font-semibold text-slate-500 tracking-wide mb-0.5">Dirección Fiscal / Sede</label>
+            <input type="text" id="cfg_direccion" class="w-full border-b border-slate-200 bg-transparent py-0.5 text-xs text-slate-800 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
+          </div>
+        </div>
+
+        <div class="border-t border-slate-100 pt-3 mt-3 grid grid-cols-1 xs:grid-cols-2 gap-x-4 gap-y-3">
+          <div>
+            <label class="block text-[10px] font-semibold text-slate-500 tracking-wide mb-0.5">Nombre del Facultativo</label>
+            <input type="text" id="cfg_medico" class="w-full border-b border-slate-200 bg-transparent py-0.5 text-xs text-slate-800 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
+          </div>
+          <div>
+            <label class="block text-[10px] font-semibold text-slate-500 tracking-wide mb-0.5">Nº Colegiado</label>
+            <input type="text" id="cfg_colegiado" class="w-full border-b border-slate-200 bg-transparent py-0.5 text-xs text-slate-800 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
+          </div>
+        </div>
+
+        <div class="pt-3 flex justify-end">
+          <button
+            type="button"
+            onclick="saveConfig()"
+            class="bg-sky-600 text-white px-4 py-1.5 rounded text-xs hover:bg-sky-500 active:bg-sky-700 transition-colors shadow-sm"
+          >
+            Guardar Configuración
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ── Vista: Instrucciones ─────────────────────────────────────────── -->
+    <div
+      id="instructions-view"
+      class="hidden max-w-2xl mx-auto mt-3 p-3 sm:p-5 bg-white rounded-lg shadow-sm border border-slate-100 no-print"
+    >
+      <h2 class="text-sm font-semibold border-b border-slate-100 pb-2 mb-4 text-slate-700 tracking-wide">
+        Guía de Uso y Normativa Legal
+      </h2>
+
+      <div class="space-y-3 text-xs text-slate-700">
+        <div class="bg-slate-50 p-2.5 rounded border border-slate-100">
+          <h3 class="font-semibold text-slate-800 mb-1.5 flex items-center gap-1.5">
+            <svg class="text-sky-500" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            1. Creación del Documento
+          </h3>
+          <ul class="list-disc pl-4 space-y-0.5 text-[10px]">
+            <li>Configure previamente los datos fijos de su empresa y número de colegiado en <strong>Config</strong>.</li>
+            <li>Rellene la anamnesis, constantes vitales y tratamientos en <strong>Informe</strong>. Los campos de diagnóstico y medicación incluyen autocompletado.</li>
+            <li>Use el botón <strong>(+)</strong> azul para añadir múltiples tomas de constantes vitales.</li>
+          </ul>
+        </div>
+
+        <div class="bg-sky-50 p-2.5 rounded border border-sky-100">
+          <h3 class="font-semibold text-sky-900 mb-1.5 flex items-center gap-1.5">
+            <svg class="text-sky-500" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            2. Generación y Firma de Seguridad
+          </h3>
+          <p class="mb-1 text-[10px]">Haga clic en <strong>PDF</strong>. El sistema genera un documento cerrado.</p>
+          <ul class="list-disc pl-4 space-y-0.5 text-[10px]">
+            <li><strong>Firma Criptográfica:</strong> Use <a href="https://firmaelectronica.gob.es/Home/Descargas.html" target="_blank" class="text-sky-600 underline">AutoFirma</a> o Adobe Acrobat para aplicar su certificado digital.</li>
+            <li class="text-red-700 font-semibold">Aviso de Integridad: Cualquier modificación posterior al PDF invalidará la firma digital.</li>
+          </ul>
+        </div>
+
+        <div class="bg-red-50 p-2.5 rounded border border-red-100">
+          <h3 class="font-semibold text-red-900 mb-1.5 flex items-center gap-1.5">
+            <svg class="text-red-500" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18"></path>
+              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+            3. Limpieza de Dispositivo (RGPD)
+          </h3>
+          <p class="text-[10px]">Por imperativo de la <strong>LOPDGDD 3/2018</strong> y el <strong>Reglamento (UE) 2016/679</strong>:</p>
+          <p class="mt-1 font-semibold text-[10px] text-red-800">
+            Una vez finalizado el servicio y remitido el archivo, ES OBLIGATORIO hacer clic en <strong>Borrar</strong> para evitar filtraciones de datos en equipos compartidos.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Vista: Informe (principal) ───────────────────────────────────── -->
+    <div
+      id="report-view"
+      class="max-w-4xl mx-auto mt-1 p-2 sm:p-4 bg-white rounded-lg shadow-sm border border-slate-100"
+    >
+      <!-- Cabecera del documento -->
+      <div class="border-b border-slate-200 pb-1.5 mb-2 flex justify-between items-end bg-white">
+        <div>
+          <h1 id="report-title" class="text-lg font-bold text-slate-900 uppercase tracking-tight leading-none">
+            Informe Médico
+          </h1>
+          <h2 id="report-subtitle" class="text-[10px] text-slate-500 tracking-wide mt-0.5">
+            Servicio Extrahospitalario
+          </h2>
+        </div>
+        <div class="text-right text-[10px] text-slate-600 leading-snug">
+          <div id="disp_empresa" class="font-semibold text-xs text-slate-800"></div>
+          <div id="disp_cif" class="text-[9px]"></div>
+          <div id="disp_direccion" class="text-[9px]"></div>
+        </div>
+      </div>
+
+      <form id="clinical-form" class="space-y-2" autocomplete="off">
+        <div id="dynamic-content"></div>
+      </form>
+
+      <!-- Pie legal -->
+      <div class="mt-4 pt-2 border-t border-slate-100 text-[9px] text-justify text-slate-400 leading-snug bg-white page-break-avoid">
+        <p class="mb-1">PROTECCIÓN DE DATOS: Conforme al RGPD (UE) 2016/679 y LOPDGDD 3/2018, sus datos de salud serán tratados por la entidad emisora para la prestación y gestión de la asistencia sanitaria. Puede ejercer sus derechos de acceso, rectificación, supresión y oposición dirigiéndose al Responsable del Tratamiento a través de la dirección postal indicada en la cabecera de este documento.</p>
+        <p>INFORMACIÓN CLÍNICA: Documento emitido conforme a la Ley 41/2002. Su contenido es de carácter estrictamente confidencial, está amparado por el secreto profesional y destinado exclusivamente a garantizar la continuidad asistencial del paciente.</p>
+      </div>
+    </div>
+
+    <div id="datalists-container"></div>
+
+  </body>
+</html>

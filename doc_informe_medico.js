@@ -1,3 +1,5 @@
+import { UI_COMPONENTS } from './components.js';
+
 const DOC_INFORME_MEDICO = {
   id: "informe_medico",
   label: "Informe Médico",
@@ -491,3 +493,5 @@ const DOC_INFORME_MEDICO = {
     ];
   },
 };
+
+export { DOC_INFORME_MEDICO };

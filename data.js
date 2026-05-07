@@ -556,3 +556,5 @@ const HOSPITALES_DB = {
     "Hospital MAZ",
   ],
 };
+
+export { CIE10_DB, FARMACOS_DB, HOSPITALES_DB };

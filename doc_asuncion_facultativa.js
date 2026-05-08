@@ -62,10 +62,16 @@ export const DOC_ASUNCION_FACULTATIVA = {
           </div>
         </div>
       `,
+      `<div class="mt-2 pt-2 border-t border-slate-100">
+        <label class="flex items-center gap-2 cursor-pointer select-none">
+          <input type="checkbox" id="check-testigos-escena" class="w-4 h-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+            onchange="document.getElementById('campos-testigos').classList.toggle('hidden', !this.checked)">
+          <span class="text-xs font-semibold text-slate-700">Añadir testigos en escena</span>
+        </label>
+      </div>`,
       UI_COMPONENTS.testigos(),
       UI_COMPONENTS.clausulaLegal(`<strong>CLÁUSULA DE EXONERACIÓN Y DIRECCIÓN MÉDICA (Ley 44/2003 y Ley 41/2002):</strong><br/>El facultativo identificado en este documento, tras acreditar su identidad y titulación médica, <strong>ASUME</strong> de forma voluntaria, expresa e indelegable la Dirección Médica y el control de la asistencia sanitaria del paciente en la escena. Al amparo de la legislación sanitaria vigente, <strong>EXIME</strong> al equipo de emergencias originalmente interviniente de toda responsabilidad civil, penal o administrativa derivada de las decisiones clínicas, triaje, tratamientos y destino de traslado determinados a partir de la hora exacta de asunción aquí firmada. El equipo de emergencias actuará en adelante bajo las directrices estrictas de dicho facultativo.`),
-      // Truco arquitectónico: Renombramos las etiquetas, pero app.js sigue usando canvas-paciente y canvas-medico
-      UI_COMPONENTS.firmas("Responsable del Equipo (Cede el mando)", "Facultativo Interviniente (Asume)")
+      UI_COMPONENTS.firmas("FACULTATIVO INTERVINIENTE (Asume)")
     ];
   },
 
@@ -165,7 +171,7 @@ export const DOC_ASUNCION_FACULTATIVA = {
           {
             width: "*",
             stack: [
-              { text: "RESPONSABLE DEL EQUIPO (Cede el mando)", style: "firmaLabel" },
+              { text: "FACULTATIVO INTERVINIENTE (Asume)", style: "firmaLabel" },
               firmaPacienteContent,
               { canvas: [{ type: "line", x1: 0, y1: 0, x2: 220, y2: 0, lineWidth: 0.5, lineColor: "#94a3b8" }], margin: [0, 4, 0, 2] },
               { text: "Técnico / Enfermero", fontSize: 7.5, color: "#475569" },
@@ -175,7 +181,7 @@ export const DOC_ASUNCION_FACULTATIVA = {
           {
             width: "*",
             stack: [
-              { text: `FACULTATIVO INTERVINIENTE (Asume)`, style: "firmaLabel", color: "#0369a1" },
+              { text: "RESPONSABLE DEL EQUIPO (Cede el mando)", style: "firmaLabel", color: "#0369a1" },
               firmaMedicoContent,
               { canvas: [{ type: "line", x1: 0, y1: 0, x2: 220, y2: 0, lineWidth: 0.5, lineColor: "#94a3b8" }], margin: [0, 4, 0, 2] },
               { text: afNombre !== "—" ? afNombre : "Firma del Médico", fontSize: 7.5, color: "#475569" },

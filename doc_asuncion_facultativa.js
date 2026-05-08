@@ -127,7 +127,7 @@ export const DOC_ASUNCION_FACULTATIVA = {
         ]
       },
 
-      { text: "1. FACULTATIVO INTERVINIENTE (ASUME EL MANDO)", style: "sectionHeader" },
+      { text: "1. Facultativo interviniente - Asume el mando", style: "sectionHeader" },
       {
         margin: [0, 4, 0, 4],
         columns: [
@@ -174,7 +174,7 @@ export const DOC_ASUNCION_FACULTATIVA = {
               { text: "FACULTATIVO INTERVINIENTE (Asume)", style: "firmaLabel" },
               firmaPacienteContent,
               { canvas: [{ type: "line", x1: 0, y1: 0, x2: 220, y2: 0, lineWidth: 0.5, lineColor: "#94a3b8" }], margin: [0, 4, 0, 2] },
-              { text: "Técnico / Enfermero", fontSize: 7.5, color: "#475569" },
+              { text: "Firma", fontSize: 7.5, color: "#475569" },
             ],
           },
           { width: 20, text: "" },
@@ -184,7 +184,7 @@ export const DOC_ASUNCION_FACULTATIVA = {
               { text: "RESPONSABLE DEL EQUIPO (Cede el mando)", style: "firmaLabel", color: "#0369a1" },
               firmaMedicoContent,
               { canvas: [{ type: "line", x1: 0, y1: 0, x2: 220, y2: 0, lineWidth: 0.5, lineColor: "#94a3b8" }], margin: [0, 4, 0, 2] },
-              { text: afNombre !== "—" ? afNombre : "Firma del Médico", fontSize: 7.5, color: "#475569" },
+              { text: afNombre !== "—" ? afNombre : "Firma", fontSize: 7.5, color: "#475569" },
             ],
           },
         ],

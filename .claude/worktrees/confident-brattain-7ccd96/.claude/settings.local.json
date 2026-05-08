@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(dir /B \"D:\\\\Proyectos\\\\Documed\\\\.claude\\\\worktrees\\\\confident-brattain-7ccd96\\\\dist\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git count-objects *)",
+      "Bash(git rm *)",
+      "Bash(git push *)",
+      "Bash(git commit -m 'fix: add netlify.toml to configure build command and publish dir *)",
+      "mcp__7b69c410-c04b-4ebd-92a1-b910182ee946__netlify-project-services-reader",
+      "mcp__7b69c410-c04b-4ebd-92a1-b910182ee946__netlify-deploy-services-reader",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_in_Chrome__switch_browser",
+      "Bash(npx kill-port *)",
+      "Bash(cd \"D:\\\\Proyectos\\\\Documed\" && ls -la *.js 2>&1)",
+      "Bash(grep -v \"//\")",
+      "Bash(grep -E \"\\\\.\\(js|html|css|json|toml\\)$\")",
+      "Bash(git pull *)",
+      "Bash(git restore *)"
+    ]
+  }
+}

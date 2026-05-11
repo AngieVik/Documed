@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "dompurify": "^3.4.2",
     "pdfmake": "0.2.10",
     "signature_pad": "^4.2.0"
   },

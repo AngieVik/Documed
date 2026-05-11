@@ -193,9 +193,17 @@ function initMultiAutocomplete(inputId, database, isMulti = true) {
   const { signal } = controller;
 
   let blurTimeout;
+  let selectedIndex = -1;
+
+  function highlightItem(index) {
+    Array.from(menu.children).forEach((li, i) => {
+      li.classList.toggle("bg-blue-100", i === index);
+    });
+  }
 
   // Extraemos la lógica a una función para poder llamarla al hacer clic o escribir
   function renderMenu() {
+    selectedIndex = -1;
     const val = input.value;
     const parts = isMulti ? val.split(",") : [val];
     const currentFragment = parts[parts.length - 1].trim();
@@ -250,6 +258,29 @@ function initMultiAutocomplete(inputId, database, isMulti = true) {
       menu.classList.add("hidden");
     }, 150);
   }, { signal });
+
+  input.addEventListener("keydown", (e) => {
+    if (menu.classList.contains("hidden")) return;
+    const items = menu.children;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      selectedIndex = (selectedIndex + 1) % items.length;
+      highlightItem(selectedIndex);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+      highlightItem(selectedIndex);
+    } else if (e.key === "Enter") {
+      if (selectedIndex >= 0 && items[selectedIndex]) {
+        e.preventDefault();
+        items[selectedIndex].click();
+        selectedIndex = -1;
+      }
+    } else if (e.key === "Escape") {
+      menu.classList.add("hidden");
+      selectedIndex = -1;
+    }
+  }, { signal });
 }
 // ── Datalists (CIE-10, Fármacos, Hospitales) ────────────────────────────
 
@@ -296,6 +327,8 @@ function clearSignature(type) {
   if (type === "medico")   SignatureState.medico   && SignatureState.medico.clear();
 }
 
+const SignatureState = { resizeListenerAdded: false };
+
 function initSignaturePads() {
   const canvasPaciente = document.getElementById("canvas-paciente");
   const canvasMedico   = document.getElementById("canvas-medico");
@@ -324,6 +357,15 @@ function initSignaturePads() {
 
 // ── Lógica de Tutor Legal ────────────────────────────────────────────────
 
+function calcularEdadExacta(fechaNac) {
+  const nacimiento = parseLocalDate(fechaNac);
+  const hoy = new Date();
+  let edad = hoy.getFullYear() - nacimiento.getFullYear();
+  const m = hoy.getMonth() - nacimiento.getMonth();
+  if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
+  return edad;
+}
+
 function checkAge() {
   const inputNacimiento = document.getElementById("paciente-nacimiento");
   const bloqueTutor = document.getElementById("bloque-tutor");
@@ -333,14 +375,7 @@ function checkAge() {
 
   if (!inputNacimiento || !inputNacimiento.value) return;
 
-  const fechaNac = parseLocalDate(inputNacimiento.value);
-  const hoy = new Date();
-  let edad = hoy.getFullYear() - fechaNac.getFullYear();
-  const m = hoy.getMonth() - fechaNac.getMonth();
-  
-  if (m < 0 || (m === 0 && hoy.getDate() < fechaNac.getDate())) {
-    edad--;
-  }
+  const edad = calcularEdadExacta(inputNacimiento.value);
 
   if (edad < 18) {
     if (bloqueTutor) bloqueTutor.classList.remove("hidden");
@@ -510,15 +545,8 @@ async function generarPDF() {
   const tutorDni    = getVal("paciente-tutor-dni");
   
   const checkDependencia = formData["check-dependencia"] || false;
-  let esMenor = false;
   const inputNac = getVal("paciente-nacimiento");
-  if (inputNac) {
-    const fn = parseLocalDate(inputNac);
-    const h = new Date();
-    let ed = h.getFullYear() - fn.getFullYear();
-    if (h.getMonth() < fn.getMonth() || (h.getMonth() === fn.getMonth() && h.getDate() < fn.getDate())) ed--;
-    if (ed < 18) esMenor = true;
-  }
+  const esMenor  = inputNac ? calcularEdadExacta(inputNac) < 18 : false;
   const tutorFirma = esMenor || checkDependencia;
 
   // Evaluación clínica

@@ -138,7 +138,7 @@ const UI_COMPONENTS = {
             ${row(['ta-1','fc-1','spo2-1','temp-1','gluc-1'],
                   ['TA mmHg','FC lpm','SpO2 %','Temp ºC','Gluc mg/dl'])}
             <div class="flex items-end justify-center pb-0.5">
-              <button type="button" onclick="addConstantes()" class="${T.iconBtnAdd}" title="Añadir toma de constantes">
+              <button type="button" data-action="addConstantes" class="${T.iconBtnAdd}" title="Añadir toma de constantes">
                 ${ICON.plus}
               </button>
             </div>
@@ -204,7 +204,7 @@ const UI_COMPONENTS = {
             <input type="text" class="input-testigo-dni ${T.input}" />
           </div>
           <div class="flex items-end justify-center pb-0.5">
-            <button type="button" onclick="removeTestigo(this, ${index})" class="${T.iconBtnRem}" title="Eliminar testigo">
+            <button type="button" data-action="removeTestigo" data-index="${index}" class="${T.iconBtnRem}" title="Eliminar testigo">
               ${ICON.minus}
             </button>
           </div>
@@ -214,7 +214,7 @@ const UI_COMPONENTS = {
           <div class="border border-slate-200 rounded bg-white h-16 relative flex items-center justify-center overflow-hidden">
             <span class="absolute text-[10px] text-slate-300 italic text-center px-4 pointer-events-none select-none z-0">Firma en este recuadro.</span>
             <canvas id="canvas-testigo-${index}" class="w-full h-full rounded cursor-crosshair relative z-10 bg-transparent"></canvas>
-            <button type="button" class="${T.sigBtn}" onclick="clearTestigoSignature(${index})">Borrar</button>
+            <button type="button" class="${T.sigBtn}" data-action="clearTestigoSignature" data-index="${index}">Borrar</button>
           </div>
         </div>
       </div>
@@ -227,7 +227,7 @@ const UI_COMPONENTS = {
       <div id="campos-testigos" class="hidden mt-2 bg-slate-50/50 p-2 rounded border border-slate-100 page-break-avoid">
         <div class="flex justify-between items-center mb-1.5">
           <h4 class="${T.h3}">Testigos Sanitarios</h4>
-          <button type="button" onclick="addTestigo()" class="${T.iconBtnAdd}" title="Añadir testigo">
+          <button type="button" data-action="addTestigo" class="${T.iconBtnAdd}" title="Añadir testigo">
             ${ICON.plus}
           </button>
         </div>
@@ -253,7 +253,7 @@ const UI_COMPONENTS = {
             <div class="border border-slate-200 rounded bg-white h-16 relative flex items-center justify-center overflow-hidden">
               <span class="absolute text-[10px] text-slate-300 italic text-center px-4 pointer-events-none select-none z-0">Acepto la asistencia prestada.</span>
               <canvas id="canvas-paciente" class="w-full h-full rounded cursor-crosshair relative z-10 bg-transparent"></canvas>
-              <button type="button" class="${T.sigBtn}" onclick="clearSignature('paciente')">Borrar</button>
+              <button type="button" class="${T.sigBtn}" data-action="clearSignature" data-target="paciente">Borrar</button>
             </div>
           </div>
 
@@ -281,7 +281,7 @@ const UI_COMPONENTS = {
             <div class="border border-slate-200 rounded bg-white h-16 relative flex items-center justify-center overflow-hidden">
               <span class="absolute text-[10px] text-slate-300 italic text-center px-4 pointer-events-none select-none z-0">El documento será firmado digitalmente.</span>
               <canvas id="canvas-medico" class="w-full h-full rounded cursor-crosshair relative z-10 bg-transparent"></canvas>
-              <button type="button" class="${T.sigBtn}" onclick="clearSignature('medico')">Borrar</button>
+              <button type="button" class="${T.sigBtn}" data-action="clearSignature" data-target="medico">Borrar</button>
             </div>
           </div>
         </div>

@@ -7,6 +7,24 @@ import { CIE10_DB, FARMACOS_DB, HOSPITALES_DB } from './data.js';
 import { DOC_TEMPLATES } from './templates.js';
 import { UI_COMPONENTS } from './components.js';
 
+// ── Estado de módulo — Firmas ─────────────────────────────────────────────
+
+const SignatureState = {
+  paciente: null,
+  medico:   null,
+  testigos: [],
+  counter:  0,
+};
+let resizeListenerAdded = false;
+
+// ── Utilidades de fecha ───────────────────────────────────────────────────
+
+function parseLocalDate(str) {
+  if (!str) return null;
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 // ── Utilidades UI ────────────────────────────────────────────────────────
 
 function autoResize(textarea) {
@@ -89,46 +107,42 @@ function addConstantes() {
 }
 
 function addTestigo() {
-  if (typeof window.testigoCounter === "undefined") window.testigoCounter = 0;
-  if (!window.testigosPads) window.testigosPads = [];
-  
-  const index = window.testigoCounter++;
+  const index = SignatureState.counter++;
   const container = document.getElementById("testigos-container");
   container.insertAdjacentHTML('beforeend', UI_COMPONENTS.filaTestigo(index));
-  
+
   const canvas = document.getElementById(`canvas-testigo-${index}`);
   const pad = new SignaturePad(canvas, { penColor: "rgb(15,23,42)", minWidth: 0.8, maxWidth: 2.5 });
-  
-  window.testigosPads.push({ index, pad, canvas });
-  
+
+  SignatureState.testigos.push({ index, pad, canvas });
+
   resizeCanvas(canvas, pad);
 }
 
 function removeTestigo(btn, index) {
+  const entry = SignatureState.testigos.find(t => t.index === index);
+  if (entry) entry.pad.off();
+  SignatureState.testigos = SignatureState.testigos.filter(t => t.index !== index);
   btn.closest('.testigo-row').remove();
-  if (window.testigosPads) {
-    window.testigosPads = window.testigosPads.filter(t => t.index !== index);
-  }
 }
 
 function clearTestigoSignature(index) {
-  if (window.testigosPads) {
-    const tp = window.testigosPads.find(t => t.index === index);
-    if (tp && tp.pad) tp.pad.clear();
-  }
+  const tp = SignatureState.testigos.find(t => t.index === index);
+  if (tp) tp.pad.clear();
 }
 
 
 function clearReport() {
   if (confirm("¿Borrar todos los datos clínicos?")) {
+    destroySignaturePads();
     document.getElementById("clinical-form").reset();
     document
       .querySelectorAll("#constantes-container .constantes-row:not(:first-of-type)")
       .forEach((row) => row.remove());
     document.querySelectorAll(".testigo-row").forEach(row => row.remove());
-    if (window.testigosPads) window.testigosPads = [];
     document.querySelectorAll("textarea").forEach((ta) => (ta.style.height = "auto"));
     setDefaultDateTime();
+    initSignaturePads();
   }
 }
 
@@ -289,6 +303,14 @@ function updateHospitalesDatalist() {
 
 // ── Firmas (SignaturePad + canvas Retina) ────────────────────────────────
 
+function destroySignaturePads() {
+  if (SignatureState.paciente) { SignatureState.paciente.off(); SignatureState.paciente = null; }
+  if (SignatureState.medico)   { SignatureState.medico.off();   SignatureState.medico   = null; }
+  SignatureState.testigos.forEach(({ pad }) => pad.off());
+  SignatureState.testigos = [];
+  SignatureState.counter  = 0;
+}
+
 function resizeCanvas(canvas, pad) {
   const ratio = Math.max(window.devicePixelRatio || 1, 1);
   const rect  = canvas.parentElement.getBoundingClientRect();
@@ -301,8 +323,8 @@ function resizeCanvas(canvas, pad) {
 }
 
 function clearSignature(type) {
-  if (type === "paciente") window.padPaciente && window.padPaciente.clear();
-  if (type === "medico")   window.padMedico   && window.padMedico.clear();
+  if (type === "paciente") SignatureState.paciente && SignatureState.paciente.clear();
+  if (type === "medico")   SignatureState.medico   && SignatureState.medico.clear();
 }
 
 const SignatureState = { resizeListenerAdded: false };
@@ -311,37 +333,32 @@ function initSignaturePads() {
   const canvasPaciente = document.getElementById("canvas-paciente");
   const canvasMedico   = document.getElementById("canvas-medico");
 
-  if (canvasPaciente) window.padPaciente = new SignaturePad(canvasPaciente, { penColor: "rgb(15,23,42)", minWidth: 0.8, maxWidth: 2.5 });
-  if (canvasMedico) window.padMedico   = new SignaturePad(canvasMedico,   { penColor: "rgb(15,23,42)", minWidth: 0.8, maxWidth: 2.5 });
+  if (canvasPaciente) SignatureState.paciente = new SignaturePad(canvasPaciente, { penColor: "rgb(15,23,42)", minWidth: 0.8, maxWidth: 2.5 });
+  if (canvasMedico)   SignatureState.medico   = new SignaturePad(canvasMedico,   { penColor: "rgb(15,23,42)", minWidth: 0.8, maxWidth: 2.5 });
 
-  if (canvasPaciente) resizeCanvas(canvasPaciente, window.padPaciente);
-  if (canvasMedico) resizeCanvas(canvasMedico,   window.padMedico);
+  if (canvasPaciente) resizeCanvas(canvasPaciente, SignatureState.paciente);
+  if (canvasMedico)   resizeCanvas(canvasMedico,   SignatureState.medico);
 
-  window.testigosPads = [];
-  window.testigoCounter = 0;
-
-  if (!SignatureState.resizeListenerAdded) {
+  if (!resizeListenerAdded) {
     window.addEventListener("resize", () => {
       const cp = document.getElementById("canvas-paciente");
       const cm = document.getElementById("canvas-medico");
-      if (cp && window.padPaciente) resizeCanvas(cp, window.padPaciente);
-      if (cm && window.padMedico) resizeCanvas(cm, window.padMedico);
-      if (window.testigosPads) {
-        window.testigosPads.forEach(t => {
-          if (t.canvas && document.body.contains(t.canvas)) {
-            resizeCanvas(t.canvas, t.pad);
-          }
-        });
-      }
+      if (cp && SignatureState.paciente) resizeCanvas(cp, SignatureState.paciente);
+      if (cm && SignatureState.medico)   resizeCanvas(cm, SignatureState.medico);
+      SignatureState.testigos.forEach(t => {
+        if (t.canvas && document.body.contains(t.canvas)) {
+          resizeCanvas(t.canvas, t.pad);
+        }
+      });
     });
-    SignatureState.resizeListenerAdded = true;
+    resizeListenerAdded = true;
   }
 }
 
 // ── Lógica de Tutor Legal ────────────────────────────────────────────────
 
 function calcularEdadExacta(fechaNac) {
-  const nacimiento = new Date(fechaNac);
+  const nacimiento = parseLocalDate(fechaNac);
   const hoy = new Date();
   let edad = hoy.getFullYear() - nacimiento.getFullYear();
   const m = hoy.getMonth() - nacimiento.getMonth();
@@ -469,6 +486,7 @@ function getActiveTemplate() {
 }
 
 function switchTemplate() {
+  destroySignaturePads();
   const template = getActiveTemplate();
 
   const dynamicContainer = document.getElementById("dynamic-content");
@@ -599,13 +617,13 @@ async function generarPDF() {
 
   // Firmas
   const firmaPacienteContent =
-    window.padPaciente && !window.padPaciente.isEmpty()
-      ? { image: window.padPaciente.toDataURL("image/png"), width: 220, height: 70, margin: [0,4,0,0] }
+    SignatureState.paciente && !SignatureState.paciente.isEmpty()
+      ? { image: SignatureState.paciente.toDataURL("image/png"), width: 220, height: 70, margin: [0,4,0,0] }
       : { text: "(Sin firma del paciente)", style: "firmaPendiente", margin: [0,10,0,0] };
 
   const firmaMedicoContent =
-    window.padMedico && !window.padMedico.isEmpty()
-      ? { image: window.padMedico.toDataURL("image/png"), width: 220, height: 70, margin: [0,4,0,0] }
+    SignatureState.medico && !SignatureState.medico.isEmpty()
+      ? { image: SignatureState.medico.toDataURL("image/png"), width: 220, height: 70, margin: [0,4,0,0] }
       : { text: "Firmado digitalmente mediante certificado PAdES", italics: true, fontSize: 8, color: "#334155", margin: [0,10,0,0] };
 
   // Datos de negativa (alta voluntaria)
@@ -623,9 +641,9 @@ async function generarPDF() {
     
     let firmaContent = null;
     const canvas = row.querySelector("canvas");
-    if (canvas && window.testigosPads) {
-      const match = window.testigosPads.find(t => t.canvas === canvas);
-      if (match && match.pad && !match.pad.isEmpty()) {
+    if (canvas) {
+      const match = SignatureState.testigos.find(t => t.canvas === canvas);
+      if (match && !match.pad.isEmpty()) {
         firmaContent = match.pad.toDataURL("image/png");
       }
     }

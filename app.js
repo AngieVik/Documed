@@ -14,8 +14,8 @@ const SignatureState = {
   medico:   null,
   testigos: [],
   counter:  0,
+  resizeListenerAdded: false
 };
-let resizeListenerAdded = false;
 
 // ── Utilidades de fecha ───────────────────────────────────────────────────
 
@@ -327,8 +327,6 @@ function clearSignature(type) {
   if (type === "medico")   SignatureState.medico   && SignatureState.medico.clear();
 }
 
-const SignatureState = { resizeListenerAdded: false };
-
 function initSignaturePads() {
   const canvasPaciente = document.getElementById("canvas-paciente");
   const canvasMedico   = document.getElementById("canvas-medico");
@@ -339,7 +337,7 @@ function initSignaturePads() {
   if (canvasPaciente) resizeCanvas(canvasPaciente, SignatureState.paciente);
   if (canvasMedico)   resizeCanvas(canvasMedico,   SignatureState.medico);
 
-  if (!resizeListenerAdded) {
+  if (!SignatureState.resizeListenerAdded) {
     window.addEventListener("resize", () => {
       const cp = document.getElementById("canvas-paciente");
       const cm = document.getElementById("canvas-medico");
@@ -351,7 +349,7 @@ function initSignaturePads() {
         }
       });
     });
-    resizeListenerAdded = true;
+    SignatureState.resizeListenerAdded = true;
   }
 }
 

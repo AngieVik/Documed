@@ -17,10 +17,6 @@ import { registerSW } from 'virtual:pwa-register';
 
 pdfMake.vfs = pdfFonts?.pdfMake?.vfs ?? {};
 
-// Exponer en window las instancias que pueden necesitar handlers inline residuales
-window.pdfMake = pdfMake;
-window.SignaturePad = SignaturePad;
-
 registerSW({
   immediate: true,
   onNeedRefresh() {

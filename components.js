@@ -127,7 +127,6 @@ const UI_COMPONENTS = {
             <div>
               <label class="block text-[9px] font-semibold text-slate-500 tracking-wide mb-0.5 whitespace-nowrap">${labels[i]}</label>
               <input ${id ? `id="${id}"` : ''} type="text" maxlength="${[7,3,3,4,3][i]}"
-                oninput="this.value = this.value.replace(${['/[^0-9\\\\/]/g', '/[^0-9]/g', '/[^0-9]/g', '/[^0-9.,]/g', '/[^0-9]/g'][i]}, '')"
                 class="${extra}${T.inputMono}" />
             </div>`).join('');
 
@@ -151,26 +150,26 @@ const UI_COMPONENTS = {
           <div class="grid grid-cols-3 sm:grid-cols-6 gap-x-2 gap-y-1.5 items-end">
             <div>
               <label class="block text-[9px] font-semibold text-slate-500 tracking-wide mb-0.5">TA</label>
-              <input type="text" maxlength="7" oninput="this.value = this.value.replace(/[^0-9\\/]/g, '')" class="input-ta ${T.inputMono}" />
+              <input type="text" maxlength="7" class="input-ta ${T.inputMono}" />
             </div>
             <div>
               <label class="block text-[9px] font-semibold text-slate-500 tracking-wide mb-0.5">FC</label>
-              <input type="text" maxlength="3" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="input-fc ${T.inputMono}" />
+              <input type="text" maxlength="3" class="input-fc ${T.inputMono}" />
             </div>
             <div>
               <label class="block text-[9px] font-semibold text-slate-500 tracking-wide mb-0.5">SpO2</label>
-              <input type="text" maxlength="3" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="input-spo2 ${T.inputMono}" />
+              <input type="text" maxlength="3" class="input-spo2 ${T.inputMono}" />
             </div>
             <div>
               <label class="block text-[9px] font-semibold text-slate-500 tracking-wide mb-0.5">Temp</label>
-              <input type="text" maxlength="4" oninput="this.value = this.value.replace(/[^0-9.,]/g, '')" class="input-temp ${T.inputMono}" />
+              <input type="text" maxlength="4" class="input-temp ${T.inputMono}" />
             </div>
             <div>
               <label class="block text-[9px] font-semibold text-slate-500 tracking-wide mb-0.5">Gluc</label>
-              <input type="text" maxlength="3" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="input-gluc ${T.inputMono}" />
+              <input type="text" maxlength="3" class="input-gluc ${T.inputMono}" />
             </div>
             <div class="flex items-end justify-center pb-0.5">
-              <button type="button" onclick="this.closest('.constantes-row').remove()" class="${T.iconBtnRem}" title="Eliminar toma">
+              <button type="button" data-action="removeConstantesRow" class="${T.iconBtnRem}" title="Eliminar toma">
                 ${ICON.minus}
               </button>
             </div>
@@ -211,9 +210,9 @@ const UI_COMPONENTS = {
         </div>
         <div class="relative">
           <label class="${T.label}">Firma del Testigo</label>
-          <div class="border border-slate-200 rounded bg-white h-16 relative flex items-center justify-center overflow-hidden">
-            <span class="absolute text-[10px] text-slate-300 italic text-center px-4 pointer-events-none select-none z-0">Firma en este recuadro.</span>
-            <canvas id="canvas-testigo-${index}" class="w-full h-full rounded cursor-crosshair relative z-10 bg-transparent"></canvas>
+          <div class="aspect-[4/1] w-full relative border border-slate-200 rounded bg-white overflow-hidden">
+            <span class="absolute inset-0 flex items-center justify-center text-[10px] text-slate-300 italic text-center px-4 pointer-events-none select-none">Firma en este recuadro.</span>
+            <canvas id="canvas-testigo-${index}" class="absolute inset-0 w-full h-full rounded cursor-crosshair bg-transparent"></canvas>
             <button type="button" class="${T.sigBtn}" data-action="clearTestigoSignature" data-index="${index}">Borrar</button>
           </div>
         </div>
@@ -237,11 +236,24 @@ const UI_COMPONENTS = {
     `;
   },
 
+  // ── Categoría Profesional — campo por plantilla ─────────────────────────
+  // tipo: 'Facultativo' | 'DUE' | 'TES' → input readonly
+  // tipo: 'select' → <select> con las tres opciones reglamentarias
+  categoriaField(tipo) {
+    const cls = "border-b border-slate-200 bg-transparent py-0.5 text-[10px] text-sky-600 font-semibold focus:outline-none";
+    if (tipo === 'select') {
+      return `<select id="input_firma_cat" class="${cls} focus:border-sky-400 transition-colors">
+        <option value="Facultativo">Facultativo</option>
+        <option value="DUE">DUE</option>
+        <option value="TES">TES</option>
+      </select>`;
+    }
+    return `<input type="text" id="input_firma_cat" readonly value="${tipo}" class="${cls} cursor-default" />`;
+  },
+
   // ── Firmas Biométricas ──────────────────────────────────────────────────
-  // Grid 1 col → 2 cols en xs (360px+)
-  // labelFacultativo ya no se muestra como texto estático: se usa disp_medico (config)
-  // o los campos manuales input_firma_nombre/input_firma_num (sin config).
-  firmas(labelPaciente) {
+  // Grid 1 col → 2 cols en xs (360px+). Ratio canvas 1:4 (alto:ancho).
+  firmas(labelPaciente, categoriaFieldHTML = '') {
     return `
       <div id="firmas" class="section-block mt-4 pt-3 border-t border-slate-200 page-break-avoid">
         <div class="grid grid-cols-1 xs:grid-cols-2 gap-3">
@@ -250,9 +262,9 @@ const UI_COMPONENTS = {
             <div class="flex-1 flex flex-col justify-end pb-1">
               <span id="label-firma-paciente" class="text-[10px] font-semibold text-slate-700 tracking-wide">${labelPaciente}</span>
             </div>
-            <div class="border border-slate-200 rounded bg-white h-16 relative flex items-center justify-center overflow-hidden">
-              <span class="absolute text-[10px] text-slate-300 italic text-center px-4 pointer-events-none select-none z-0">Acepto la asistencia prestada.</span>
-              <canvas id="canvas-paciente" class="w-full h-full rounded cursor-crosshair relative z-10 bg-transparent"></canvas>
+            <div class="aspect-[4/1] w-full relative border border-slate-200 rounded bg-white overflow-hidden">
+              <span class="absolute inset-0 flex items-center justify-center text-[10px] text-slate-300 italic text-center px-4 pointer-events-none select-none">Acepto la asistencia prestada.</span>
+              <canvas id="canvas-paciente" class="absolute inset-0 w-full h-full rounded cursor-crosshair bg-transparent"></canvas>
               <button type="button" class="${T.sigBtn}" data-action="clearSignature" data-target="paciente">Borrar</button>
             </div>
           </div>
@@ -260,16 +272,8 @@ const UI_COMPONENTS = {
           <!-- COLUMNA FACULTATIVO -->
           <div class="flex flex-col">
             <div class="flex-1 flex flex-col justify-end pb-1">
-              <!-- Datos de config (visibles cuando hay configuración guardada) -->
-              <div id="disp_firma_info" class="hidden flex flex-col gap-0.5 overflow-hidden">
-                <span class="text-[8px] text-sky-600 font-bold block" id="disp_categoria"></span>
-                <span class="text-[9px] text-slate-600 font-semibold truncate" id="disp_medico"></span>
-                <span class="text-[8px] text-slate-500" id="disp_colegiado_container">(<span id="disp_colegiado"></span>)</span>
-              </div>
-              <!-- Inputs manuales (visibles cuando NO hay configuración) -->
-              <div id="firma-manual-inputs" class="flex flex-col gap-0.5 no-print">
-                <input type="text" id="input_firma_cat" placeholder="Categoría profesional"
-                  class="border-b border-slate-200 bg-transparent py-0.5 text-[10px] text-sky-600 font-semibold placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
+              <div class="flex flex-col gap-0.5 no-print">
+                ${categoriaFieldHTML}
                 <div class="flex gap-1">
                   <input type="text" id="input_firma_nombre" placeholder="Nombre del facultativo / diplomado/a"
                     class="flex-1 border-b border-slate-200 bg-transparent py-0.5 text-xs text-slate-800 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
@@ -278,9 +282,9 @@ const UI_COMPONENTS = {
                 </div>
               </div>
             </div>
-            <div class="border border-slate-200 rounded bg-white h-16 relative flex items-center justify-center overflow-hidden">
-              <span class="absolute text-[10px] text-slate-300 italic text-center px-4 pointer-events-none select-none z-0">El documento será firmado digitalmente.</span>
-              <canvas id="canvas-medico" class="w-full h-full rounded cursor-crosshair relative z-10 bg-transparent"></canvas>
+            <div class="aspect-[4/1] w-full relative border border-slate-200 rounded bg-white overflow-hidden">
+              <span class="absolute inset-0 flex items-center justify-center text-[10px] text-slate-300 italic text-center px-4 pointer-events-none select-none">El documento será firmado digitalmente.</span>
+              <canvas id="canvas-medico" class="absolute inset-0 w-full h-full rounded cursor-crosshair bg-transparent"></canvas>
               <button type="button" class="${T.sigBtn}" data-action="clearSignature" data-target="medico">Borrar</button>
             </div>
           </div>

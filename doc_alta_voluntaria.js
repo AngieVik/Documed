@@ -24,15 +24,15 @@ const DOC_ALTA_VOLUNTARIA = {
           <div class="space-y-3">
             <div>
               <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Situación Clínica</label>
-              <textarea id="neg-situacion" rows="2" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="" oninput="autoResize(this)"></textarea>
+              <textarea id="neg-situacion" rows="2" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="" ></textarea>
             </div>
             <div>
               <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Propuesta Asistencial Rechazada</label>
-              <textarea id="neg-propuesta" rows="2" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="" oninput="autoResize(this)"></textarea>
+              <textarea id="neg-propuesta" rows="2" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="" ></textarea>
             </div>
             <div>
               <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Riesgos Advertidos</label>
-              <textarea id="neg-riesgos" rows="2" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="" oninput="autoResize(this)"></textarea>
+              <textarea id="neg-riesgos" rows="2" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" placeholder="" ></textarea>
             </div>
             <div class="mt-4 pt-2 border-t border-slate-200">
               <label class="flex items-center gap-2 cursor-pointer select-none">
@@ -45,7 +45,7 @@ const DOC_ALTA_VOLUNTARIA = {
       `,
       UI_COMPONENTS.testigos(),
       UI_COMPONENTS.clausulaLegal(CLAUSULA_LEGAL_HTML),
-      UI_COMPONENTS.firmas("Firma del Paciente", "Facultativo"),
+      UI_COMPONENTS.firmas("Firma del Paciente", UI_COMPONENTS.categoriaField("select")),
     ];
   },
 

@@ -33,62 +33,8 @@ function autoResize(textarea) {
 }
 
 function toggleView(view) {
-  document.getElementById("config-view").classList.toggle("hidden", view !== "config");
   document.getElementById("report-view").classList.toggle("hidden", view !== "report");
   document.getElementById("instructions-view").classList.toggle("hidden", view !== "instructions");
-  if (view === "report") loadConfigToReport();
-}
-
-// ── Persistencia (localStorage) ──────────────────────────────────────────
-
-const CONFIG_KEYS = ["medico", "colegiado", "categoria"];
-
-function saveConfig() {
-  try {
-    CONFIG_KEYS.forEach((key) =>
-      localStorage.setItem(`documed_${key}`, document.getElementById(`cfg_${key}`).value)
-    );
-    alert("Configuración guardada.");
-  } catch (e) {
-    console.error("Error al guardar configuración:", e);
-    alert("No se pudo guardar la configuración. El almacenamiento local no está disponible.");
-  }
-  toggleView("report");
-}
-
-function loadConfig() {
-  try {
-    CONFIG_KEYS.forEach((key) => {
-      const val = localStorage.getItem(`documed_${key}`);
-      if (val) document.getElementById(`cfg_${key}`).value = val;
-    });
-  } catch (e) {
-    console.warn("localStorage no disponible; configuración omitida.", e);
-  }
-  loadConfigToReport();
-}
-
-function loadConfigToReport() {
-  try {
-    CONFIG_KEYS.forEach((key) => {
-      const displayEl = document.getElementById(`disp_${key}`);
-      if (displayEl) displayEl.textContent = localStorage.getItem(`documed_${key}`) || "";
-    });
-
-    // Cabecera de firma: mostrar config guardada o inputs manuales
-    const hasMedico = !!localStorage.getItem("documed_medico");
-    const dispInfo  = document.getElementById("disp_firma_info");
-    const manualInputs = document.getElementById("firma-manual-inputs");
-    if (dispInfo)      dispInfo.classList.toggle("hidden", !hasMedico);
-    if (manualInputs)  manualInputs.classList.toggle("hidden", hasMedico);
-    // Actualizar colegiado y categoría en los spans de display
-    const dispCol = document.getElementById("disp_colegiado");
-    if (dispCol) dispCol.textContent = localStorage.getItem("documed_colegiado") || "";
-    const dispCat = document.getElementById("disp_categoria");
-    if (dispCat) dispCat.textContent = localStorage.getItem("documed_categoria") || "";
-  } catch (e) {
-    console.warn("No se pudo cargar configuración en el reporte.", e);
-  }
 }
 
 // ── Formulario clínico ───────────────────────────────────────────────────
@@ -312,12 +258,14 @@ function destroySignaturePads() {
 }
 
 function resizeCanvas(canvas, pad) {
-  const ratio = Math.max(window.devicePixelRatio || 1, 1);
-  const rect  = canvas.parentElement.getBoundingClientRect();
-  canvas.width  = rect.width  * ratio;
-  canvas.height = rect.height * ratio;
-  canvas.style.width  = rect.width  + "px";
-  canvas.style.height = rect.height + "px";
+  const ratio  = Math.max(window.devicePixelRatio || 1, 1);
+  const rect   = canvas.parentElement.getBoundingClientRect();
+  const width  = rect.width;
+  const height = width / 4;  // Ratio 1:4 (alto:ancho) idéntico al renderizado pdfmake
+  canvas.width  = width  * ratio;
+  canvas.height = height * ratio;
+  canvas.style.width  = width  + "px";
+  canvas.style.height = height + "px";
   canvas.getContext("2d").scale(ratio, ratio);
   pad.clear();
 }
@@ -412,15 +360,18 @@ function getFormData() {
 }
 
 function rebindGlobalEvents() {
-  // 1. Inicializar Datalist de Provincias (si la plantilla lo requiere)
+  // 1. Inicializar Datalist de Provincias y su evento change (si la plantilla lo requiere)
   const provSelector = document.getElementById("provincia-selector");
-  if (provSelector && provSelector.options.length <= 1) {
-    Object.keys(HOSPITALES_DB).sort().forEach((prov) => {
-      const opt = document.createElement("option");
-      opt.value = prov;
-      opt.textContent = prov;
-      provSelector.appendChild(opt);
-    });
+  if (provSelector) {
+    if (provSelector.options.length <= 1) {
+      Object.keys(HOSPITALES_DB).sort().forEach((prov) => {
+        const opt = document.createElement("option");
+        opt.value = prov;
+        opt.textContent = prov;
+        provSelector.appendChild(opt);
+      });
+    }
+    provSelector.addEventListener("change", updateHospitalesDatalist);
   }
 
   // 2. Inicializar Motor de Firmas Biométricas
@@ -432,20 +383,21 @@ function rebindGlobalEvents() {
     checkSinMedico.addEventListener("change", (e) => {
       const camposTestigos = document.getElementById("campos-testigos");
       const labelFirmaFacultativo = document.getElementById("label-firma-facultativo");
-      const dispMedico = document.getElementById("disp_medico");
-      const dispColegiadoContainer = document.getElementById("disp_colegiado_container");
-      
       if (e.target.checked) {
         if (camposTestigos) camposTestigos.classList.remove("hidden");
         if (labelFirmaFacultativo) labelFirmaFacultativo.textContent = "Firma Testigos";
-        if (dispMedico) dispMedico.classList.add("hidden");
-        if (dispColegiadoContainer) dispColegiadoContainer.classList.add("hidden");
       } else {
         if (camposTestigos) camposTestigos.classList.add("hidden");
         if (labelFirmaFacultativo) labelFirmaFacultativo.textContent = "Facultativo";
-        if (dispMedico) dispMedico.classList.remove("hidden");
-        if (dispColegiadoContainer) dispColegiadoContainer.classList.remove("hidden");
       }
+    });
+  }
+
+  // Para doc_asuncion_facultativa: checkbox que muestra testigos en escena
+  const checkTestigosEscena = document.getElementById("check-testigos-escena");
+  if (checkTestigosEscena) {
+    checkTestigosEscena.addEventListener("change", (e) => {
+      document.getElementById("campos-testigos")?.classList.toggle("hidden", !e.target.checked);
     });
   }
 
@@ -477,9 +429,23 @@ function rebindGlobalEvents() {
 
 // ── Selector de plantilla ────────────────────────────────────────────────
 
+function inyectarDOMSeguro(htmlString, contenedor) {
+  const doc = new DOMParser().parseFromString(htmlString, 'text/html');
+  doc.querySelectorAll('script').forEach(el => el.remove());
+  doc.querySelectorAll('*').forEach(el => {
+    Array.from(el.attributes)
+      .filter(attr => attr.name.startsWith('on'))
+      .forEach(attr => el.removeAttribute(attr.name));
+  });
+  contenedor.innerHTML = '';
+  Array.from(doc.body.childNodes).forEach(node =>
+    contenedor.appendChild(document.adoptNode(node))
+  );
+}
+
 function getActiveTemplate() {
   const sel = document.getElementById("doc-selector");
-  if (!sel || !sel.value) return null; // Permite el estado nulo
+  if (!sel || !sel.value) return null;
   return DOC_TEMPLATES[sel.value];
 }
 
@@ -492,19 +458,19 @@ function switchTemplate() {
 
   if (!template) {
     if (dynamicContainer) {
-      dynamicContainer.innerHTML = `
+      inyectarDOMSeguro(`
         <div class="flex flex-col items-center justify-center p-16 text-slate-400 min-h-[50vh]">
           <img src="./icon-512.png" alt="DocuMed" class="w-32 h-32 opacity-20 mb-6 grayscale" />
           <p class="text-xs uppercase tracking-widest font-semibold">Seleccione un documento para comenzar</p>
         </div>
-      `;
+      `, dynamicContainer);
     }
     if (mainTitle) mainTitle.textContent = "DOCUMED";
     return;
   }
 
   if (dynamicContainer && template.getSections) {
-    dynamicContainer.innerHTML = template.getSections().join("");
+    inyectarDOMSeguro(template.getSections().join(""), dynamicContainer);
   }
 
   if (mainTitle) mainTitle.textContent = template.pdfTitle;
@@ -603,15 +569,13 @@ async function generarPDF() {
   const cif       = "B04905394";
   const direccion = "Av. Mare Nostrum, 195, Sector 20, 04009 Almería - Tlf: 950 92 03 93";
 
-  // Configuración del facultativo
-  const medico    = localStorage.getItem("documed_medico")    || "";
-  const colegiado = localStorage.getItem("documed_colegiado") || "";
-  const categoria = localStorage.getItem("documed_categoria") || "";
-
-  // Campos manuales de firma (visibles cuando no hay config guardada)
-  const firmaNombre = (document.getElementById("input_firma_nombre")?.value || "").trim();
-  const firmaNum    = (document.getElementById("input_firma_num")?.value    || "").trim();
-  const firmaCat    = (document.getElementById("input_firma_cat")?.value    || "").trim();
+  // Datos del facultativo — exclusivamente del formulario activo
+  const medico    = (document.getElementById("input_firma_nombre")?.value || "").trim();
+  const colegiado = (document.getElementById("input_firma_num")?.value    || "").trim();
+  const categoria = (document.getElementById("input_firma_cat")?.value    || "").trim();
+  const firmaNombre = medico;
+  const firmaNum    = colegiado;
+  const firmaCat    = categoria;
 
   // Firmas
   const firmaPacienteContent =
@@ -726,9 +690,10 @@ async function generarPDF() {
 // ── Eventos estáticos y delegación de componentes dinámicos ──────────────
 
 function initStaticEvents() {
-  document.getElementById("btn-save-config").addEventListener("click", saveConfig);
+  const reportView = document.getElementById("report-view");
 
-  document.getElementById("report-view").addEventListener("click", (e) => {
+  // Delegación de clicks para acciones de componentes dinámicos
+  reportView.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
     switch (btn.dataset.action) {
@@ -737,20 +702,31 @@ function initStaticEvents() {
       case "removeTestigo":         removeTestigo(btn, Number(btn.dataset.index)); break;
       case "clearTestigoSignature": clearTestigoSignature(Number(btn.dataset.index)); break;
       case "clearSignature":        clearSignature(btn.dataset.target); break;
+      case "appendTratamiento":     appendTratamiento(); break;
+      case "removeConstantesRow":   btn.closest('.constantes-row').remove(); break;
     }
+  });
+
+  // Delegación de input: autoResize en textareas + validación numérica de constantes
+  reportView.addEventListener("input", (e) => {
+    if (e.target.tagName === "TEXTAREA") autoResize(e.target);
+    const el = e.target;
+    if      (el.classList.contains("input-ta"))   el.value = el.value.replace(/[^0-9/]/g, '');
+    else if (el.classList.contains("input-fc"))   el.value = el.value.replace(/[^0-9]/g, '');
+    else if (el.classList.contains("input-spo2")) el.value = el.value.replace(/[^0-9]/g, '');
+    else if (el.classList.contains("input-temp")) el.value = el.value.replace(/[^0-9.,]/g, '');
+    else if (el.classList.contains("input-gluc")) el.value = el.value.replace(/[^0-9]/g, '');
   });
 }
 
 // ── Inicialización (window.onload) ────────────────────────────────────────
 
 window.onload = () => {
-  loadConfig();
   setDefaultDateTime();
   populateDatalists();
   initStaticEvents();
 
   document.getElementById("btn-info").addEventListener("click", () => toggleView("instructions"));
-  document.getElementById("btn-config").addEventListener("click", () => toggleView("config"));
   document.getElementById("btn-report").addEventListener("click", () => toggleView("report"));
   document.getElementById("btn-clear").addEventListener("click", clearReport);
   document.getElementById("btn-print").addEventListener("click", generarPDF);
@@ -771,9 +747,3 @@ window.onload = () => {
   });
 };
 
-// Las funciones de components.js y index.html ya no necesitan window.*:
-// están vinculadas via initStaticEvents() + event delegation.
-// Estas 3 se mantienen porque doc_*.js contienen oninput/onclick inline que las referencian.
-window.autoResize               = autoResize;
-window.appendTratamiento        = appendTratamiento;
-window.updateHospitalesDatalist = updateHospitalesDatalist;

@@ -48,16 +48,16 @@ const DOC_INFORME_ENFERMERIA = {
           </div>
           <div class="mb-3">
             <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Antecedentes Personales</label>
-            <textarea id="antecedentes" rows="1" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" oninput="autoResize(this)"></textarea>
+            <textarea id="antecedentes" rows="1" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" ></textarea>
           </div>
           <div class="mb-3">
             <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Anamnesis / Motivo de Consulta</label>
-            <textarea id="anamnesis" rows="1" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" oninput="autoResize(this)"></textarea>
+            <textarea id="anamnesis" rows="1" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" ></textarea>
           </div>
       ` + UI_COMPONENTS.constantesVitales() + `
           <div class="mb-3">
             <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Valoración de Enfermería</label>
-            <textarea id="exploracion" rows="1" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" oninput="autoResize(this)"></textarea>
+            <textarea id="exploracion" rows="1" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" ></textarea>
           </div>
         </div>
 
@@ -75,9 +75,9 @@ const DOC_INFORME_ENFERMERIA = {
               <select id="via-input" class="w-16 border-b border-slate-300 bg-transparent py-1 text-[10px] text-slate-800 focus:outline-none focus:border-blue-600">
                 <option value="IV">IV</option><option value="IM">IM</option><option value="SC">SC</option><option value="VO">VO</option><option value="SL">SL</option><option value="INH">INH</option>
               </select>
-              <button type="button" onclick="appendTratamiento()" class="bg-blue-100 text-blue-700 px-3 py-1 rounded text-xs hover:bg-blue-200 font-bold transition-colors">+</button>
+              <button type="button" data-action="appendTratamiento" class="bg-blue-100 text-blue-700 px-3 py-1 rounded text-xs hover:bg-blue-200 font-bold transition-colors">+</button>
             </div>
-            <textarea id="tratamiento-textarea" rows="1" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" oninput="autoResize(this)"></textarea>
+            <textarea id="tratamiento-textarea" rows="1" class="w-full border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600" ></textarea>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
             <div>
@@ -93,7 +93,7 @@ const DOC_INFORME_ENFERMERIA = {
             <div id="seccion-destino">
               <label class="block text-[10px] font-bold text-slate-500 tracking-wide mb-1">Hospital o Centro de destino (si procede)</label>
               <div class="flex gap-2">
-                <select id="provincia-selector" required onchange="updateHospitalesDatalist()" class="w-1/3 border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 focus:outline-none focus:border-blue-600 invalid:text-slate-400">
+                <select id="provincia-selector" required class="w-1/3 border-b border-slate-300 bg-transparent py-1 text-xs text-slate-800 focus:outline-none focus:border-blue-600 invalid:text-slate-400">
                   <option value="" disabled selected hidden></option>
                 </select>
                 <div class="w-2/3 relative">
@@ -104,7 +104,7 @@ const DOC_INFORME_ENFERMERIA = {
           </div>
         </div>
       `,
-      UI_COMPONENTS.firmas("Firma del Paciente")
+      UI_COMPONENTS.firmas("Firma del Paciente", UI_COMPONENTS.categoriaField("DUE"))
     ];
   },
 

@@ -245,8 +245,9 @@ const UI_COMPONENTS = {
     return `
       <div id="firmas" class="section-block mt-4 pt-3 border-t border-slate-200 page-break-avoid">
         <div class="grid grid-cols-1 xs:grid-cols-2 gap-3">
+          <!-- COLUMNA PACIENTE -->
           <div class="flex flex-col">
-            <div class="mb-1">
+            <div class="flex-1 flex flex-col justify-end pb-1">
               <span id="label-firma-paciente" class="text-[10px] font-semibold text-slate-700 tracking-wide">${labelPaciente}</span>
             </div>
             <div class="border border-slate-200 rounded bg-white h-16 relative flex items-center justify-center overflow-hidden">
@@ -256,19 +257,25 @@ const UI_COMPONENTS = {
             </div>
           </div>
 
+          <!-- COLUMNA FACULTATIVO -->
           <div class="flex flex-col">
-            <div class="mb-1">
+            <div class="flex-1 flex flex-col justify-end pb-1">
               <!-- Datos de config (visibles cuando hay configuración guardada) -->
-              <div id="disp_firma_info" class="hidden flex items-baseline gap-1 flex-wrap overflow-hidden">
+              <div id="disp_firma_info" class="hidden flex flex-col gap-0.5 overflow-hidden">
+                <span class="text-[8px] text-sky-600 font-bold block" id="disp_categoria"></span>
                 <span class="text-[9px] text-slate-600 font-semibold truncate" id="disp_medico"></span>
                 <span class="text-[8px] text-slate-500" id="disp_colegiado_container">(<span id="disp_colegiado"></span>)</span>
               </div>
               <!-- Inputs manuales (visibles cuando NO hay configuración) -->
-              <div id="firma-manual-inputs" class="flex gap-1 no-print">
-                <input type="text" id="input_firma_nombre" placeholder="Nombre del facultativo / diplomado/a"
-                  class="flex-1 border-b border-slate-200 bg-transparent py-0.5 text-xs text-slate-800 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
-                <input type="text" id="input_firma_num" placeholder="Nº Col./Dip."
-                  class="w-20 border-b border-slate-200 bg-transparent py-0.5 text-xs text-slate-800 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
+              <div id="firma-manual-inputs" class="flex flex-col gap-0.5 no-print">
+                <input type="text" id="input_firma_cat" placeholder="Categoría profesional"
+                  class="border-b border-slate-200 bg-transparent py-0.5 text-[10px] text-sky-600 font-semibold placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
+                <div class="flex gap-1">
+                  <input type="text" id="input_firma_nombre" placeholder="Nombre del facultativo / diplomado/a"
+                    class="flex-1 border-b border-slate-200 bg-transparent py-0.5 text-xs text-slate-800 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
+                  <input type="text" id="input_firma_num" placeholder="Nº Col./Dip."
+                    class="w-20 border-b border-slate-200 bg-transparent py-0.5 text-xs text-slate-800 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
+                </div>
               </div>
             </div>
             <div class="border border-slate-200 rounded bg-white h-16 relative flex items-center justify-center overflow-hidden">

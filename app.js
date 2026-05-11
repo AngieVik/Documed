@@ -23,7 +23,7 @@ function toggleView(view) {
 
 // ── Persistencia (localStorage) ──────────────────────────────────────────
 
-const CONFIG_KEYS = ["empresa", "cif", "direccion", "medico", "colegiado"];
+const CONFIG_KEYS = ["medico", "colegiado", "categoria"];
 
 function saveConfig() {
   CONFIG_KEYS.forEach((key) =>
@@ -46,9 +46,6 @@ function loadConfigToReport() {
     const displayEl = document.getElementById(`disp_${key}`);
     if (displayEl) displayEl.textContent = localStorage.getItem(`documed_${key}`) || "";
   });
-  if (!localStorage.getItem("documed_empresa"))
-    document.getElementById("disp_empresa").innerHTML =
-      '<span class="text-red-500 no-print">⚠️ Configure los datos</span>';
 
   // Cabecera de firma: mostrar config guardada o inputs manuales
   const hasMedico = !!localStorage.getItem("documed_medico");
@@ -56,9 +53,11 @@ function loadConfigToReport() {
   const manualInputs = document.getElementById("firma-manual-inputs");
   if (dispInfo)      dispInfo.classList.toggle("hidden", !hasMedico);
   if (manualInputs)  manualInputs.classList.toggle("hidden", hasMedico);
-  // Actualizar colegiado en el span correcto (sin el prefijo "Nº Col:" estático)
+  // Actualizar colegiado y categoría en los spans de display
   const dispCol = document.getElementById("disp_colegiado");
   if (dispCol) dispCol.textContent = localStorage.getItem("documed_colegiado") || "";
+  const dispCat = document.getElementById("disp_categoria");
+  if (dispCat) dispCat.textContent = localStorage.getItem("documed_categoria") || "";
 }
 
 // ── Formulario clínico ───────────────────────────────────────────────────
@@ -532,16 +531,20 @@ async function generarPDF() {
     }
   });
 
-  // Configuración empresa
-  const empresa   = localStorage.getItem("documed_empresa")   || "";
-  const cif       = localStorage.getItem("documed_cif")       || "";
-  const direccion = localStorage.getItem("documed_direccion") || "";
+  // Datos empresa (constantes corporativas)
+  const empresa   = "U24 Servicios Sanitarios S.L";
+  const cif       = "B04905394";
+  const direccion = "Av. Mare Nostrum, 195, Sector 20, 04009 Almería - Tlf: 950 92 03 93";
+
+  // Configuración del facultativo
   const medico    = localStorage.getItem("documed_medico")    || "";
   const colegiado = localStorage.getItem("documed_colegiado") || "";
+  const categoria = localStorage.getItem("documed_categoria") || "";
 
   // Campos manuales de firma (visibles cuando no hay config guardada)
   const firmaNombre = (document.getElementById("input_firma_nombre")?.value || "").trim();
   const firmaNum    = (document.getElementById("input_firma_num")?.value    || "").trim();
+  const firmaCat    = (document.getElementById("input_firma_cat")?.value    || "").trim();
 
   // Firmas
   const firmaPacienteContent =
@@ -614,7 +617,7 @@ async function generarPDF() {
       tratamiento, diagnostico, planActuacion, hospitalDestino,
       constantesData,
       firmaPacienteContent, firmaMedicoContent,
-      empresa, cif, direccion, medico, colegiado, firmaNombre, firmaNum,
+      empresa, cif, direccion, medico, colegiado, categoria, firmaNombre, firmaNum, firmaCat,
       tutorNombre, tutorDni, tutorFirma,
       negSituacion, negPropuesta, negRiesgos,
       sinMedico, testigosData,
@@ -662,6 +665,10 @@ window.onload = () => {
 
   switchTemplate(); // Renderizado inicial
 
+  window.addEventListener("beforeunload", (e) => {
+    e.preventDefault();
+    e.returnValue = "";
+  });
 };
 
 // Funciones llamadas desde atributos onclick/oninput en templates HTML.

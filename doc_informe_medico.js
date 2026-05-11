@@ -177,12 +177,15 @@ const DOC_INFORME_MEDICO = {
       firmaMedicoContent,
       medico,
       colegiado,
+      categoria,
       firmaNombre,
       firmaNum,
+      firmaCat,
     } = data;
 
-    const nombreFirmante = medico || firmaNombre || "—";
-    const numFirmante    = colegiado || firmaNum || "";
+    const categoriaFirmante = categoria || firmaCat || "";
+    const nombreFirmante    = medico || firmaNombre || "—";
+    const numFirmante       = colegiado || firmaNum || "";
 
     return [
       // Línea divisoria cabecera
@@ -417,6 +420,7 @@ const DOC_INFORME_MEDICO = {
                 style: "firmaLabel",
                 color: tutorFirma ? "#92400e" : "#0f172a",
               },
+              { text: " ", fontSize: 8, margin: [0, 0, 0, categoriaFirmante ? 6 : 0] },
               firmaPacienteContent,
               {
                 canvas: [
@@ -445,10 +449,9 @@ const DOC_INFORME_MEDICO = {
           {
             width: "*",
             stack: [
-              {
-                text: nombreFirmante + (numFirmante ? ` (Nº Col/Dip: ${numFirmante})` : ""),
-                style: "firmaLabel",
-              },
+              ...(categoriaFirmante ? [{ text: categoriaFirmante, bold: true, fontSize: 7, color: "#0284c7", margin: [0, 0, 0, 1] }] : []),
+              { text: nombreFirmante, style: "firmaLabel" },
+              ...(numFirmante ? [{ text: `Nº Col/Dip: ${numFirmante}`, fontSize: 7, color: "#64748b" }] : []),
               firmaMedicoContent,
               {
                 canvas: [
@@ -464,11 +467,7 @@ const DOC_INFORME_MEDICO = {
                 ],
                 margin: [0, 4, 0, 2],
               },
-              {
-                text: nombreFirmante,
-                fontSize: 7.5,
-                color: "#475569",
-              },
+              { text: nombreFirmante, fontSize: 7.5, color: "#475569" },
             ],
           },
         ],

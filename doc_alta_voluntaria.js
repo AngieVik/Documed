@@ -126,7 +126,13 @@ const DOC_ALTA_VOLUNTARIA = {
       direccion,
       medico,
       colegiado,
+      categoria,
+      firmaCat,
     } = data;
+
+    const categoriaFirmante = categoria || firmaCat || "";
+    const nombreFirmante    = medico || "—";
+    const numFirmante       = colegiado || "";
 
     // Bloque de firmas condicional
     const firmaPacienteCol = {
@@ -138,6 +144,7 @@ const DOC_ALTA_VOLUNTARIA = {
             : "FIRMA DEL PACIENTE",
           style: "firmaLabel",
         },
+        { text: " ", fontSize: 8, margin: [0, 0, 0, categoriaFirmante ? 6 : 0] },
         firmaPacienteContent,
         {
           canvas: [
@@ -239,10 +246,9 @@ const DOC_ALTA_VOLUNTARIA = {
       firmaFacultativoCol = {
         width: "*",
         stack: [
-          {
-            text: `Facultativo: ${medico}${colegiado ? " (Nº Col: " + colegiado + ")" : ""}`,
-            style: "firmaLabel",
-          },
+          ...(categoriaFirmante ? [{ text: categoriaFirmante, bold: true, fontSize: 7, color: "#0284c7", margin: [0, 0, 0, 1] }] : []),
+          { text: nombreFirmante, style: "firmaLabel" },
+          ...(numFirmante ? [{ text: `Nº Col/Dip: ${numFirmante}`, fontSize: 7, color: "#64748b" }] : []),
           firmaMedicoContent,
           {
             canvas: [
@@ -258,7 +264,7 @@ const DOC_ALTA_VOLUNTARIA = {
             ],
             margin: [0, 4, 0, 2],
           },
-          { text: medico || "Facultativo", fontSize: 7.5, color: "#475569" },
+          { text: nombreFirmante, fontSize: 7.5, color: "#475569" },
         ],
       };
     }

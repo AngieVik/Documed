@@ -91,8 +91,13 @@ export const DOC_ASUNCION_FACULTATIVA = {
   buildContent(data) {
     const {
       fecha, hora, lugarAsistencia, nombrePaciente, dniPaciente,
-      firmaPacienteContent, firmaMedicoContent, testigosData
+      firmaPacienteContent, firmaMedicoContent, testigosData,
+      medico, colegiado, categoria, firmaCat,
     } = data;
+
+    const categoriaFirmante = categoria || firmaCat || "";
+    const nombreFirmante    = medico || "—";
+    const numFirmante       = colegiado || "";
 
     // Extracción limpia directa del DOM para no alterar app.js
     const getDomVal = (id) => document.getElementById(id) && document.getElementById(id).value.trim() !== "" ? document.getElementById(id).value.trim() : "—";
@@ -181,10 +186,12 @@ export const DOC_ASUNCION_FACULTATIVA = {
           {
             width: "*",
             stack: [
+              ...(categoriaFirmante ? [{ text: categoriaFirmante, bold: true, fontSize: 7, color: "#0284c7", margin: [0, 0, 0, 1] }] : []),
               { text: "RESPONSABLE DEL EQUIPO (Cede el mando)", style: "firmaLabel", color: "#0369a1" },
+              ...(numFirmante ? [{ text: `Nº Col/Dip: ${numFirmante}`, fontSize: 7, color: "#64748b" }] : []),
               firmaMedicoContent,
               { canvas: [{ type: "line", x1: 0, y1: 0, x2: 220, y2: 0, lineWidth: 0.5, lineColor: "#94a3b8" }], margin: [0, 4, 0, 2] },
-              { text: afNombre !== "—" ? afNombre : "Firma", fontSize: 7.5, color: "#475569" },
+              { text: nombreFirmante, fontSize: 7.5, color: "#475569" },
             ],
           },
         ],

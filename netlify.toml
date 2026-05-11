@@ -4,3 +4,23 @@
 
 [build.environment]
   NODE_VERSION = "20"
+
+# ── Cabeceras HTTP de Seguridad ──────────────────────────────────────────────
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # script-src 'self': Vite emite JS hasheado servido desde el origin propio; sin eval ni inline
+    # style-src 'self' fonts.googleapis.com: CSS compilado en self; Google Fonts sirve su stylesheet via CDN
+    # font-src data:: pdfMake puede embeber fuentes base64 en el CSS compilado
+    # img-src data: blob:: canvas.toDataURL() para firmas digitales; pdfMake descarga via blob: URL
+    # worker-src 'self': vite-plugin-pwa genera sw.js en el origin propio
+    # object-src 'none': bloquea Flash/applets/plugins NPAPI sin excepción
+    # frame-ancestors 'none': previene clickjacking; equivalente moderno de X-Frame-Options
+    # base-uri 'self': impide base-tag injection para secuestrar URLs relativas
+    # form-action 'self': el formulario clínico no realiza submit a endpoints externos
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
+    X-Frame-Options            = "DENY"
+    X-Content-Type-Options     = "nosniff"
+    Strict-Transport-Security  = "max-age=31536000; includeSubDomains; preload"
+    Referrer-Policy            = "strict-origin-when-cross-origin"
+    Permissions-Policy         = "camera=(), microphone=(), geolocation=(), payment=()"

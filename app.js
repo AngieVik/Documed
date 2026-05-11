@@ -3,6 +3,8 @@
 // =========================================================================
 import SignaturePad from 'signature_pad';
 import pdfMake from 'pdfmake/build/pdfmake';
+import DOMPurify from 'dompurify';
+import { AppState, resetFormState } from './store.js';
 import { CIE10_DB, FARMACOS_DB, HOSPITALES_DB } from './data.js';
 import { DOC_TEMPLATES } from './templates.js';
 import { UI_COMPONENTS } from './components.js';
@@ -48,19 +50,26 @@ function setDefaultDateTime() {
 }
 
 function addConstantes() {
+  const rowIndex = AppState.constantes.length;
+  AppState.constantes.push({ ta: '', fc: '', spo2: '', temp: '', gluc: '' });
   const clone = document.getElementById("constantes-row-template").content.cloneNode(true);
+  const rowEl = clone.querySelector('.constantes-row');
+  if (rowEl) rowEl.dataset.constIdx = rowIndex;
   document.getElementById("constantes-container").appendChild(clone);
 }
 
 function addTestigo() {
   const index = SignatureState.counter++;
   const container = document.getElementById("testigos-container");
-  container.insertAdjacentHTML('beforeend', UI_COMPONENTS.filaTestigo(index));
+  const tempDiv = document.createElement('div');
+  renderTemplate(UI_COMPONENTS.filaTestigo(index), tempDiv);
+  while (tempDiv.firstChild) container.appendChild(tempDiv.firstChild);
 
   const canvas = document.getElementById(`canvas-testigo-${index}`);
   const pad = new SignaturePad(canvas, { penColor: "rgb(15,23,42)", minWidth: 0.8, maxWidth: 2.5 });
 
   SignatureState.testigos.push({ index, pad, canvas });
+  AppState.testigos.push({ index, nombre: '', dni: '' });
 
   resizeCanvas(canvas, pad);
 }
@@ -69,6 +78,7 @@ function removeTestigo(btn, index) {
   const entry = SignatureState.testigos.find(t => t.index === index);
   if (entry) entry.pad.off();
   SignatureState.testigos = SignatureState.testigos.filter(t => t.index !== index);
+  AppState.testigos       = AppState.testigos.filter(t => t.index !== index);
   btn.closest('.testigo-row').remove();
 }
 
@@ -79,17 +89,28 @@ function clearTestigoSignature(index) {
 
 
 function clearReport() {
-  if (confirm("¿Borrar todos los datos clínicos?")) {
-    destroySignaturePads();
-    document.getElementById("clinical-form").reset();
-    document
-      .querySelectorAll("#constantes-container .constantes-row:not(:first-of-type)")
-      .forEach((row) => row.remove());
-    document.querySelectorAll(".testigo-row").forEach(row => row.remove());
-    document.querySelectorAll("textarea").forEach((ta) => (ta.style.height = "auto"));
-    setDefaultDateTime();
-    initSignaturePads();
+  if (!confirm("¿Borrar todos los datos clínicos?")) return;
+  destroySignaturePads();
+  document.getElementById("clinical-form").reset();
+  document
+    .querySelectorAll("#constantes-container .constantes-row:not(:first-of-type)")
+    .forEach((row) => row.remove());
+  document.querySelectorAll(".testigo-row").forEach(row => row.remove());
+  document.querySelectorAll("textarea").forEach((ta) => (ta.style.height = "auto"));
+  resetFormState();
+  // La primera fila de constantes siempre queda visible — re-registrar en estado
+  const firstRow = document.querySelector('.constantes-row');
+  if (firstRow) {
+    firstRow.dataset.constIdx = '0';
+    AppState.constantes.push({ ta: '', fc: '', spo2: '', temp: '', gluc: '' });
   }
+  setDefaultDateTime();
+  // Sincronizar fecha/hora por defecto al estado (únicos campos con valor inicial)
+  const dateEl = document.querySelector('#dynamic-content input[type="date"]');
+  const timeEl = document.querySelector('#dynamic-content input[type="time"]');
+  if (dateEl?.id) AppState.form[dateEl.id] = dateEl.value;
+  if (timeEl?.id) AppState.form[timeEl.id] = timeEl.value;
+  initSignaturePads();
 }
 
 function appendTratamiento() {
@@ -340,25 +361,6 @@ function checkAge() {
 }
 
 
-// ── Renderizado Dinámico ────────────────────────────────────────────────
-function getFormData() {
-  const container = document.getElementById("dynamic-content");
-  if (!container) return {};
-  
-  const data = {};
-  const elements = container.querySelectorAll("input, select, textarea");
-  elements.forEach((el) => {
-    if (el.id) {
-      if (el.type === "checkbox" || el.type === "radio") {
-        data[el.id] = el.checked;
-      } else {
-        data[el.id] = el.value.trim();
-      }
-    }
-  });
-  return data;
-}
-
 function rebindGlobalEvents() {
   // 1. Inicializar Datalist de Provincias y su evento change (si la plantilla lo requiere)
   const provSelector = document.getElementById("provincia-selector");
@@ -429,18 +431,41 @@ function rebindGlobalEvents() {
 
 // ── Selector de plantilla ────────────────────────────────────────────────
 
-function inyectarDOMSeguro(htmlString, contenedor) {
-  const doc = new DOMParser().parseFromString(htmlString, 'text/html');
-  doc.querySelectorAll('script').forEach(el => el.remove());
-  doc.querySelectorAll('*').forEach(el => {
-    Array.from(el.attributes)
-      .filter(attr => attr.name.startsWith('on'))
-      .forEach(attr => el.removeAttribute(attr.name));
+/**
+ * Renderiza HTML de plantilla médica en un contenedor DOM usando DOMPurify.
+ * Allowlist explícita de elementos/atributos para formularios clínicos:
+ * inputs, canvas de firma, iconos SVG inline, delegación de eventos con data-*.
+ *
+ * @param {string} htmlString - HTML generado por getSections() o UI_COMPONENTS.
+ * @param {Element} contenedor - Elemento DOM destino donde se monta el contenido.
+ */
+function renderTemplate(htmlString, contenedor) {
+  const fragment = DOMPurify.sanitize(htmlString, {
+    ALLOWED_TAGS: [
+      'div', 'span', 'p', 'strong', 'em', 'br', 'ul', 'ol', 'li',
+      'h3', 'h4',
+      'form', 'label', 'input', 'textarea', 'select', 'option', 'optgroup', 'button',
+      'template',
+      'canvas', 'img',
+      'svg', 'line', 'polyline', 'path', 'circle', 'rect', 'polygon',
+    ],
+    ALLOWED_ATTR: [
+      'id', 'class', 'style',
+      'type', 'name', 'value', 'placeholder', 'rows', 'maxlength',
+      'autocomplete', 'required', 'readonly', 'disabled', 'checked', 'selected', 'for',
+      'data-action', 'data-index', 'data-target',
+      'title', 'aria-label', 'aria-hidden', 'role', 'tabindex',
+      'src', 'alt', 'width', 'height',
+      'xmlns', 'viewBox', 'fill', 'stroke', 'stroke-width',
+      'stroke-linecap', 'stroke-linejoin',
+      'x1', 'x2', 'y1', 'y2', 'cx', 'cy', 'r', 'd', 'points',
+    ],
+    FORBID_TAGS: ['script', 'object', 'embed', 'applet', 'iframe'],
+    FORBID_ATTR: ['formaction'],
+    RETURN_DOM_FRAGMENT: true,
   });
   contenedor.innerHTML = '';
-  Array.from(doc.body.childNodes).forEach(node =>
-    contenedor.appendChild(document.adoptNode(node))
-  );
+  contenedor.appendChild(fragment);
 }
 
 function getActiveTemplate() {
@@ -449,16 +474,45 @@ function getActiveTemplate() {
   return DOC_TEMPLATES[sel.value];
 }
 
+/**
+ * Lectura única de DOM post-render para inicializar AppState.form con los
+ * valores por defecto de la plantilla recién montada (ej: fecha/hora actual,
+ * opciones preseleccionadas). Llamar solo desde switchTemplate().
+ */
+function hydrateInitialState() {
+  const container = document.getElementById("dynamic-content");
+  if (!container) return;
+
+  container.querySelectorAll("input, select, textarea").forEach(el => {
+    if (!el.id) return;
+    AppState.form[el.id] = (el.type === 'checkbox' || el.type === 'radio')
+      ? el.checked
+      : el.value.trim();
+    if (el.tagName === 'SELECT' && el.selectedIndex > 0) {
+      AppState.form[el.id + '__text'] = el.options[el.selectedIndex].text;
+    }
+  });
+
+  // Registrar la primera fila de constantes si la plantilla la incluye
+  const firstRow = container.querySelector('.constantes-row');
+  if (firstRow) {
+    firstRow.dataset.constIdx = '0';
+    AppState.constantes = [{ ta: '', fc: '', spo2: '', temp: '', gluc: '' }];
+  }
+}
+
 function switchTemplate() {
   destroySignaturePads();
+  resetFormState();
   const template = getActiveTemplate();
+  AppState.templateKey = template ? Object.keys(DOC_TEMPLATES).find(k => DOC_TEMPLATES[k] === template) ?? null : null;
 
   const dynamicContainer = document.getElementById("dynamic-content");
   const mainTitle = document.querySelector("#report-view h1");
 
   if (!template) {
     if (dynamicContainer) {
-      inyectarDOMSeguro(`
+      renderTemplate(`
         <div class="flex flex-col items-center justify-center p-16 text-slate-400 min-h-[50vh]">
           <img src="./icon-512.png" alt="DocuMed" class="w-32 h-32 opacity-20 mb-6 grayscale" />
           <p class="text-xs uppercase tracking-widest font-semibold">Seleccione un documento para comenzar</p>
@@ -470,15 +524,16 @@ function switchTemplate() {
   }
 
   if (dynamicContainer && template.getSections) {
-    inyectarDOMSeguro(template.getSections().join(""), dynamicContainer);
+    renderTemplate(template.getSections().join(""), dynamicContainer);
   }
 
   if (mainTitle) mainTitle.textContent = template.pdfTitle;
 
   rebindGlobalEvents();
+  hydrateInitialState();
 }
 
-async function generarPDF() {
+async function generarPDF(state = AppState) {
   const template = getActiveTemplate();
   if (!template) {
     alert("Seleccione un documento antes de generar el PDF.");
@@ -486,17 +541,19 @@ async function generarPDF() {
   }
 
   const btnPrint = document.getElementById("btn-print");
-  const originalHTML = btnPrint.innerHTML;
+  const savedChildren = [...btnPrint.childNodes];
   btnPrint.disabled = true;
-  btnPrint.innerHTML = `<span class="text-[10px]">Generando...</span>`;
-  const formData = getFormData();
-  const getVal   = (id) => (formData[id] || "");
+  const spanGenerando = document.createElement('span');
+  spanGenerando.className = 'text-[10px]';
+  spanGenerando.textContent = 'Generando...';
+  btnPrint.replaceChildren(spanGenerando);
+  // ── Extracción de estado: cero accesos al DOM ────────────────────────────
+  const getVal = (id) => (state.form[id] ?? "");
 
   // Datos de asistencia
   const fecha        = getVal("asistencia-fecha");
   const hora         = getVal("asistencia-hora");
-  const tipoServEl  = document.getElementById("asistencia-tipo");
-  const tipoServicio = tipoServEl && tipoServEl.selectedIndex > 0 ? tipoServEl.options[tipoServEl.selectedIndex].text : "";
+  const tipoServicio = state.form['asistencia-tipo__text'] || "";
 
   // Filiación
   const nombrePaciente = getVal("paciente-nombre") || "—";
@@ -505,79 +562,57 @@ async function generarPDF() {
   const lugarAsistencia= getVal("lugar-asistencia") || "—";
 
   // Tutor Legal / Representante
-  const tutorNombre = getVal("paciente-tutor-nombre");
-  const tutorDni    = getVal("paciente-tutor-dni");
-  
-  const checkDependencia = formData["check-dependencia"] || false;
-  const inputNac = getVal("paciente-nacimiento");
-  const esMenor  = inputNac ? calcularEdadExacta(inputNac) < 18 : false;
-  const tutorFirma = esMenor || checkDependencia;
+  const tutorNombre      = getVal("paciente-tutor-nombre");
+  const tutorDni         = getVal("paciente-tutor-dni");
+  const checkDependencia = state.form["check-dependencia"] || false;
+  const inputNac         = getVal("paciente-nacimiento");
+  const esMenor          = inputNac ? calcularEdadExacta(inputNac) < 18 : false;
+  const tutorFirma       = esMenor || checkDependencia;
 
-  // Evaluación clínica
-  const selectAlergias = document.getElementById("select-alergias");
-  let alergias = "Sin alergias conocidas";
-  if (selectAlergias) {
-    const selVal  = selectAlergias.value;
-    const selText = selectAlergias.options[selectAlergias.selectedIndex]?.text || "Sin alergias conocidas";
-    const inputText = getVal("input-alergias");
+  // Evaluación clínica — alergias
+  const selAlergiasVal  = state.form['select-alergias']       || '';
+  const selAlergiasText = state.form['select-alergias__text'] || 'Sin alergias conocidas';
+  const inputAlergiasText = getVal("input-alergias");
+  const alergias = selAlergiasVal === 'sin_alergias' || !selAlergiasVal
+    ? 'Sin alergias conocidas'
+    : selAlergiasVal === 'otras'
+      ? inputAlergiasText || 'Otras alergias (no especificadas)'
+      : inputAlergiasText ? `${selAlergiasText} - ${inputAlergiasText}` : selAlergiasText;
 
-    if (selVal === "sin_alergias") {
-      alergias = "Sin alergias conocidas";
-    } else if (selVal === "otras") {
-      alergias = inputText ? inputText : "Otras alergias (no especificadas)";
-    } else {
-      alergias = inputText ? `${selText} - ${inputText}` : selText;
-    }
-  }
-  const antecedentes= getVal("antecedentes") || "—";
-  const anamnesis   = getVal("anamnesis") || "—";
-  const exploracion = getVal("exploracion") || "—";
-  const tratamiento = getVal("tratamiento-textarea") || "—";
-  const diagnostico = getVal("diagnostico") || "—";
+  const antecedentes = getVal("antecedentes") || "—";
+  const anamnesis    = getVal("anamnesis") || "—";
+  const exploracion  = getVal("exploracion") || "—";
+  const tratamiento  = getVal("tratamiento-textarea") || "—";
+  const diagnostico  = getVal("diagnostico") || "—";
 
   // Plan
-  const selectPlan  = document.getElementById("select-plan");
-  const planActuacion = (selectPlan && selectPlan.selectedIndex > 0)
-                        ? selectPlan.options[selectPlan.selectedIndex].text
-                        : "—";
+  const planActuacion   = state.form['select-plan__text'] || "—";
   const hospitalDestino = getVal("hospital-destino") || "—";
 
-  // Constantes vitales
-  const constRows = document.querySelectorAll(".constantes-row");
-  const constantesData = [];
-  constRows.forEach((row, i) => {
-    const vals = row.querySelectorAll("input");
-    if (vals.length >= 5) {
-      const v0 = vals[0] ? vals[0].value.trim() : "";
-      const v1 = vals[1] ? vals[1].value.trim() : "";
-      const v2 = vals[2] ? vals[2].value.trim() : "";
-      const v3 = vals[3] ? vals[3].value.trim() : "";
-      const v4 = vals[4] ? vals[4].value.trim() : "";
-      constantesData.push([
-        { text: i === 0 ? "Toma 1" : `Toma ${i + 1}`, style: "tableLabel" },
-        { text: v0 || "—", style: "tableData" },
-        { text: v1 || "—", style: "tableData" },
-        { text: v2 || "—", style: "tableData" },
-        { text: v3 || "—", style: "tableData" },
-        { text: v4 || "—", style: "tableData" },
-      ]);
-    }
-  });
+  // Constantes vitales — leídas del estado, no del DOM
+  const constantesData = state.constantes.map((row, i) => [
+    { text: i === 0 ? "Toma 1" : `Toma ${i + 1}`, style: "tableLabel" },
+    { text: row.ta   || "—", style: "tableData" },
+    { text: row.fc   || "—", style: "tableData" },
+    { text: row.spo2 || "—", style: "tableData" },
+    { text: row.temp || "—", style: "tableData" },
+    { text: row.gluc || "—", style: "tableData" },
+  ]);
 
   // Datos empresa (constantes corporativas)
   const empresa   = "U24 Servicios Sanitarios S.L";
   const cif       = "B04905394";
   const direccion = "Av. Mare Nostrum, 195, Sector 20, 04009 Almería - Tlf: 950 92 03 93";
 
-  // Datos del facultativo — exclusivamente del formulario activo
-  const medico    = (document.getElementById("input_firma_nombre")?.value || "").trim();
-  const colegiado = (document.getElementById("input_firma_num")?.value    || "").trim();
-  const categoria = (document.getElementById("input_firma_cat")?.value    || "").trim();
+  // Datos del facultativo — leídos del estado (campos con ID en #dynamic-content)
+  const medico      = getVal("input_firma_nombre");
+  const colegiado   = getVal("input_firma_num");
+  const categoria   = getVal("input_firma_cat");
   const firmaNombre = medico;
   const firmaNum    = colegiado;
   const firmaCat    = categoria;
 
-  // Firmas
+  // Firmas — SignaturePad es un objeto computado efímero, no dato de negocio serializable
   const firmaPacienteContent =
     SignatureState.paciente && !SignatureState.paciente.isEmpty()
       ? { image: SignatureState.paciente.toDataURL("image/png"), width: 220, height: 70, margin: [0,4,0,0] }
@@ -589,31 +624,21 @@ async function generarPDF() {
       : { text: "Firmado digitalmente mediante certificado PAdES", italics: true, fontSize: 8, color: "#334155", margin: [0,10,0,0] };
 
   // Datos de negativa (alta voluntaria)
-  const negSituacion   = getVal("neg-situacion");
-  const negPropuesta   = getVal("neg-propuesta");
-  const negRiesgos     = getVal("neg-riesgos");
-  const sinMedico      = formData["check-sin-medico"] || false;
-  
-  // Testigos dinámicos
-  const testigoRows = document.querySelectorAll(".testigo-row");
-  const testigosData = [];
-  testigoRows.forEach((row) => {
-    const nombre = row.querySelector(".input-testigo-nombre")?.value.trim();
-    const dni = row.querySelector(".input-testigo-dni")?.value.trim();
-    
-    let firmaContent = null;
-    const canvas = row.querySelector("canvas");
-    if (canvas) {
-      const match = SignatureState.testigos.find(t => t.canvas === canvas);
-      if (match && !match.pad.isEmpty()) {
-        firmaContent = match.pad.toDataURL("image/png");
-      }
-    }
-    
-    if (nombre || dni || firmaContent) {
-      testigosData.push({ nombre, dni, firmaContent });
-    }
-  });
+  const negSituacion = getVal("neg-situacion");
+  const negPropuesta = getVal("neg-propuesta");
+  const negRiesgos   = getVal("neg-riesgos");
+  const sinMedico    = state.form["check-sin-medico"] || false;
+
+  // Testigos — índice compartido con SignatureState para recuperar la firma
+  const testigosData = state.testigos
+    .map(({ index, nombre, dni }) => {
+      const padEntry = SignatureState.testigos.find(t => t.index === index);
+      const firmaContent = padEntry && !padEntry.pad.isEmpty()
+        ? padEntry.pad.toDataURL("image/png")
+        : null;
+      return { nombre, dni, firmaContent };
+    })
+    .filter(({ nombre, dni, firmaContent }) => nombre || dni || firmaContent);
 
   // Construir docDefinition delegando el content a la plantilla activa
   const docDefinition = {
@@ -683,7 +708,54 @@ async function generarPDF() {
     alert("No se pudo generar el PDF. Por favor, inténtalo de nuevo.");
   } finally {
     btnPrint.disabled = false;
-    btnPrint.innerHTML = originalHTML;
+    btnPrint.replaceChildren(...savedChildren);
+  }
+}
+
+// ── Sincronización DOM → AppState ────────────────────────────────────────
+
+/**
+ * Escribe el valor de un elemento de formulario en AppState.
+ * Llamar DESPUÉS de cualquier normalización de valor (ej: limpieza numérica).
+ * @param {HTMLElement} el
+ */
+function syncElementToState(el) {
+  const constRow   = el.closest('.constantes-row');
+  const testigoRow = el.closest('.testigo-row');
+
+  if (constRow) {
+    const idx = parseInt(constRow.dataset.constIdx, 10);
+    if (!isNaN(idx) && AppState.constantes[idx]) {
+      const fieldMap = {
+        'input-ta': 'ta', 'input-fc': 'fc', 'input-spo2': 'spo2',
+        'input-temp': 'temp', 'input-gluc': 'gluc',
+      };
+      for (const [cls, key] of Object.entries(fieldMap)) {
+        if (el.classList.contains(cls)) AppState.constantes[idx][key] = el.value.trim();
+      }
+    }
+    return;
+  }
+
+  if (testigoRow) {
+    const idx   = parseInt(testigoRow.dataset.index, 10);
+    const entry = AppState.testigos.find(t => t.index === idx);
+    if (entry) {
+      if (el.classList.contains('input-testigo-nombre')) entry.nombre = el.value.trim();
+      if (el.classList.contains('input-testigo-dni'))    entry.dni    = el.value.trim();
+    }
+    return;
+  }
+
+  if (!el.id) return;
+  AppState.form[el.id] = (el.type === 'checkbox' || el.type === 'radio')
+    ? el.checked
+    : el.value.trim();
+  // Capturar también el texto visible de selects (necesario en alergias, plan, tipoServicio)
+  if (el.tagName === 'SELECT') {
+    AppState.form[el.id + '__text'] = el.selectedIndex > 0
+      ? el.options[el.selectedIndex].text
+      : '';
   }
 }
 
@@ -703,11 +775,19 @@ function initStaticEvents() {
       case "clearTestigoSignature": clearTestigoSignature(Number(btn.dataset.index)); break;
       case "clearSignature":        clearSignature(btn.dataset.target); break;
       case "appendTratamiento":     appendTratamiento(); break;
-      case "removeConstantesRow":   btn.closest('.constantes-row').remove(); break;
+      case "removeConstantesRow": {
+        const row = btn.closest('.constantes-row');
+        const idx = parseInt(row.dataset.constIdx, 10);
+        if (!isNaN(idx)) AppState.constantes.splice(idx, 1);
+        row.remove();
+        // Re-asignar data-const-idx a filas restantes para mantener coherencia DOM↔estado
+        document.querySelectorAll('.constantes-row').forEach((r, i) => { r.dataset.constIdx = i; });
+        break;
+      }
     }
   });
 
-  // Delegación de input: autoResize en textareas + validación numérica de constantes
+  // Delegación de input: autoResize + validación numérica + sync a AppState
   reportView.addEventListener("input", (e) => {
     if (e.target.tagName === "TEXTAREA") autoResize(e.target);
     const el = e.target;
@@ -716,7 +796,11 @@ function initStaticEvents() {
     else if (el.classList.contains("input-spo2")) el.value = el.value.replace(/[^0-9]/g, '');
     else if (el.classList.contains("input-temp")) el.value = el.value.replace(/[^0-9.,]/g, '');
     else if (el.classList.contains("input-gluc")) el.value = el.value.replace(/[^0-9]/g, '');
+    syncElementToState(el);   // captura el valor ya validado
   });
+
+  // Selects y checkboxes disparan 'change', no 'input'
+  reportView.addEventListener("change", (e) => syncElementToState(e.target));
 }
 
 // ── Inicialización (window.onload) ────────────────────────────────────────

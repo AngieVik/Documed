@@ -360,15 +360,18 @@ function getFormData() {
 }
 
 function rebindGlobalEvents() {
-  // 1. Inicializar Datalist de Provincias (si la plantilla lo requiere)
+  // 1. Inicializar Datalist de Provincias y su evento change (si la plantilla lo requiere)
   const provSelector = document.getElementById("provincia-selector");
-  if (provSelector && provSelector.options.length <= 1) {
-    Object.keys(HOSPITALES_DB).sort().forEach((prov) => {
-      const opt = document.createElement("option");
-      opt.value = prov;
-      opt.textContent = prov;
-      provSelector.appendChild(opt);
-    });
+  if (provSelector) {
+    if (provSelector.options.length <= 1) {
+      Object.keys(HOSPITALES_DB).sort().forEach((prov) => {
+        const opt = document.createElement("option");
+        opt.value = prov;
+        opt.textContent = prov;
+        provSelector.appendChild(opt);
+      });
+    }
+    provSelector.addEventListener("change", updateHospitalesDatalist);
   }
 
   // 2. Inicializar Motor de Firmas Biométricas
@@ -396,12 +399,6 @@ function rebindGlobalEvents() {
     checkTestigosEscena.addEventListener("change", (e) => {
       document.getElementById("campos-testigos")?.classList.toggle("hidden", !e.target.checked);
     });
-  }
-
-  // Para doc_informe_medico / doc_informe_enfermeria: selector de provincia
-  const provSelector = document.getElementById("provincia-selector");
-  if (provSelector) {
-    provSelector.addEventListener("change", updateHospitalesDatalist);
   }
 
   const nacimientoInput = document.getElementById("paciente-nacimiento");

@@ -316,13 +316,15 @@ const DOC_INFORME_MEDICO = {
         ? {
             margin: [0, 0, 0, 8],
             table: {
-              widths: ["auto", "*", "*", "*", "*", "*"],
+              widths: ["auto", "auto", "*", "*", "*", "*", "*", "*"],
               headerRows: 1,
               body: [
                 [
                   { text: "", style: "tableHeader" },
+                  { text: "Hora", style: "tableHeader" },
                   { text: "TA (mmHg)", style: "tableHeader" },
                   { text: "FC (lpm)", style: "tableHeader" },
+                  { text: "FR (rpm)", style: "tableHeader" },
                   { text: "SpO2 (%)", style: "tableHeader" },
                   { text: "Temp (ºC)", style: "tableHeader" },
                   { text: "Glucemia", style: "tableHeader" },

@@ -119,23 +119,43 @@ const UI_COMPONENTS = {
   },
 
   // ── Constantes Vitales ──────────────────────────────────────────────────
-  // Grid 3 cols en xs → 6 cols en sm+  (5 vitales + botón acción)
-  // xs (360px): [TA][FC][SpO2] / [Temp][Gluc][+]
-  // sm (480px): [TA][FC][SpO2][Temp][Gluc][+] en una línea
+  // Grid 4 cols en xs → 8 cols en sm+  (7 vitales + botón acción)
+  // xs (360px): [Hora][TA][FC][FR] / [SpO2][Temp][Gluc][+]
+  // sm (480px): [Hora][TA][FC][FR][SpO2][Temp][Gluc][+] en una línea
   constantesVitales() {
-    const row = (ids, labels, extra = '') => ids.map((id, i) => `
-            <div>
-              <label class="block text-[9px] font-semibold text-slate-500 tracking-wide mb-0.5 whitespace-nowrap">${labels[i]}</label>
-              <input ${id ? `id="${id}"` : ''} type="text" maxlength="${[7,3,3,4,3][i]}"
-                class="${extra}${T.inputMono}" />
-            </div>`).join('');
-
+    const lbl = 'block text-[9px] font-semibold text-slate-500 tracking-wide mb-0.5 whitespace-nowrap';
     return `
       <div class="bg-slate-50/60 rounded p-2 mb-2 page-break-avoid" id="constantes-container">
         <div class="constantes-row">
-          <div class="grid grid-cols-3 sm:grid-cols-6 gap-x-2 gap-y-1.5 items-end">
-            ${row(['ta-1','fc-1','spo2-1','temp-1','gluc-1'],
-                  ['TA mmHg','FC lpm','SpO2 %','Temp ºC','Gluc mg/dl'])}
+          <div class="grid grid-cols-4 sm:grid-cols-8 gap-x-2 gap-y-1.5 items-end">
+            <div>
+              <label class="${lbl}">Hora</label>
+              <input id="hora-1" type="time" class="input-hora ${T.inputMono}" />
+            </div>
+            <div>
+              <label class="${lbl}">TA mmHg</label>
+              <input id="ta-1" type="text" maxlength="7" class="input-ta ${T.inputMono}" />
+            </div>
+            <div>
+              <label class="${lbl}">FC lpm</label>
+              <input id="fc-1" type="text" maxlength="3" class="input-fc ${T.inputMono}" />
+            </div>
+            <div>
+              <label class="${lbl}">FR rpm</label>
+              <input id="fr-1" type="text" maxlength="3" class="input-fr ${T.inputMono}" />
+            </div>
+            <div>
+              <label class="${lbl}">SpO2 %</label>
+              <input id="spo2-1" type="text" maxlength="3" class="input-spo2 ${T.inputMono}" />
+            </div>
+            <div>
+              <label class="${lbl}">Temp ºC</label>
+              <input id="temp-1" type="text" maxlength="4" class="input-temp ${T.inputMono}" />
+            </div>
+            <div>
+              <label class="${lbl}">Gluc mg/dl</label>
+              <input id="gluc-1" type="text" maxlength="3" class="input-gluc ${T.inputMono}" />
+            </div>
             <div class="flex items-end justify-center pb-0.5">
               <button type="button" data-action="addConstantes" class="${T.iconBtnAdd}" title="Añadir toma de constantes">
                 ${ICON.plus}
@@ -147,25 +167,33 @@ const UI_COMPONENTS = {
 
       <template id="constantes-row-template">
         <div class="constantes-row border-t border-dashed border-slate-200 mt-1.5 pt-1.5">
-          <div class="grid grid-cols-3 sm:grid-cols-6 gap-x-2 gap-y-1.5 items-end">
+          <div class="grid grid-cols-4 sm:grid-cols-8 gap-x-2 gap-y-1.5 items-end">
             <div>
-              <label class="block text-[9px] font-semibold text-slate-500 tracking-wide mb-0.5">TA</label>
+              <label class="${lbl}">Hora</label>
+              <input type="time" class="input-hora ${T.inputMono}" />
+            </div>
+            <div>
+              <label class="${lbl}">TA</label>
               <input type="text" maxlength="7" class="input-ta ${T.inputMono}" />
             </div>
             <div>
-              <label class="block text-[9px] font-semibold text-slate-500 tracking-wide mb-0.5">FC</label>
+              <label class="${lbl}">FC</label>
               <input type="text" maxlength="3" class="input-fc ${T.inputMono}" />
             </div>
             <div>
-              <label class="block text-[9px] font-semibold text-slate-500 tracking-wide mb-0.5">SpO2</label>
+              <label class="${lbl}">FR</label>
+              <input type="text" maxlength="3" class="input-fr ${T.inputMono}" />
+            </div>
+            <div>
+              <label class="${lbl}">SpO2</label>
               <input type="text" maxlength="3" class="input-spo2 ${T.inputMono}" />
             </div>
             <div>
-              <label class="block text-[9px] font-semibold text-slate-500 tracking-wide mb-0.5">Temp</label>
+              <label class="${lbl}">Temp</label>
               <input type="text" maxlength="4" class="input-temp ${T.inputMono}" />
             </div>
             <div>
-              <label class="block text-[9px] font-semibold text-slate-500 tracking-wide mb-0.5">Gluc</label>
+              <label class="${lbl}">Gluc</label>
               <input type="text" maxlength="3" class="input-gluc ${T.inputMono}" />
             </div>
             <div class="flex items-end justify-center pb-0.5">

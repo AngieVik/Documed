@@ -23,6 +23,19 @@ export default defineConfig({
     commonjsOptions: {
       transformMixedEsModules: true,
     },
+    rollupOptions: {
+      output: {
+        // Chunks de pdfMake con nombre estable y predecible.
+        // Sin manualChunks, Rollup asigna hashes opacos; con ellos, el auditor
+        // puede verificar directamente en el manifiesto de precache que
+        // "vendor-pdfmake-fonts-[hash].js" está incluido y no fue excluido
+        // por maximumFileSizeToCacheInBytes.
+        manualChunks(id) {
+          if (id.includes('/pdfmake/build/pdfmake'))   return 'vendor-pdfmake';
+          if (id.includes('/pdfmake/build/vfs_fonts'))  return 'vendor-pdfmake-fonts';
+        },
+      },
+    },
   },
   optimizeDeps: {
     include: ['pdfmake/build/pdfmake', 'pdfmake/build/vfs_fonts'],
@@ -48,9 +61,14 @@ export default defineConfig({
   plugins: [
     vfsFontsPlugin,
     VitePWA({
-      registerType: 'autoUpdate',
+      // CRÍTICO — 'autoUpdate' activa el nuevo SW en segundo plano y recarga
+      // la página sin confirmación del usuario, destruyendo el estado efímero
+      // del informe en redacción. Con 'prompt', el SW instalado permanece en
+      // estado 'waiting' hasta que main.js invoca updateSW(true) tras la
+      // confirmación explícita del usuario.
+      registerType: 'prompt',
       strategies: 'generateSW',
-      injectRegister: null,
+      injectRegister: null,      // main.js gestiona el registro vía virtual:pwa-register
       includeAssets: ['icon-192.png', 'icon-512.png'],
       manifest: {
         name: 'DocuMed - Informe Clínico',
@@ -66,8 +84,31 @@ export default defineConfig({
         ],
       },
       workbox: {
-        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+        // 10 MB — vfs_fonts.js contiene fuentes tipográficas embebidas como
+        // dataURIs base64 y puede superar 2 MB minificado. El límite por defecto
+        // de Workbox (2 MB) lo excluiría silenciosamente del precache, rompiendo
+        // la generación de PDFs en modo offline.
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
+
+        // Captura todos los artefactos del build de Rollup: chunks JS con hash
+        // de contenido (incluidos vendor-pdfmake.js y vendor-pdfmake-fonts.js),
+        // hojas de estilo, HTML de entrada, iconos PNG y fuentes web.
         globPatterns: ['**/*.{js,css,html,png,svg,ico,woff,woff2}'],
+
+        // skipWaiting: false (valor por defecto de Workbox, explicitado aquí
+        // como documentación de intención). vite-plugin-pwa en modo 'prompt'
+        // inyecta un listener de mensajes en el SW generado que llama
+        // self.skipWaiting() ÚNICAMENTE cuando recibe { type: 'SKIP_WAITING' }.
+        // main.js envía ese mensaje desde updateSW(true) tras la confirmación.
+        skipWaiting: false,
+
+        // clientsClaim: true — tras la activación del nuevo SW (post-skipWaiting),
+        // claims todos los tabs abiertos. Esto dispara el evento 'controllerchange'
+        // en navigator.serviceWorker, que updateSW(true) usa internamente para
+        // invocar window.location.reload() en el tab activo del usuario.
+        // Sin este flag, el reload programático de main.js no funciona.
+        clientsClaim: true,
+
         navigateFallback: 'index.html',
         runtimeCaching: [
           {

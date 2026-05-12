@@ -8,6 +8,7 @@ import { AppState, resetFormState } from './store.js';
 import { CIE10_DB, FARMACOS_DB, HOSPITALES_DB } from './data.js';
 import { DOC_TEMPLATES } from './templates.js';
 import { UI_COMPONENTS } from './components.js';
+import { WatchdogService } from './watchdog.js';
 
 // ── Estado de módulo — Firmas ─────────────────────────────────────────────
 
@@ -18,6 +19,25 @@ const SignatureState = {
   counter:  0,
   resizeListenerAdded: false
 };
+
+// ── Ciclo de vida: registro y limpieza de listeners directos ─────────────
+
+const _directListeners = [];
+
+function _registerDirect(el, event, handler, options) {
+  el.addEventListener(event, handler, options);
+  _directListeners.push({ el, event, handler, options });
+}
+
+function teardown() {
+  _directListeners.forEach(({ el, event, handler, options }) =>
+    el.removeEventListener(event, handler, options)
+  );
+  _directListeners.length = 0;
+  document.querySelectorAll('[data-ac-input]').forEach(inp => {
+    if (inp._acController) { inp._acController.abort(); inp._acController = null; }
+  });
+}
 
 // ── Utilidades de fecha ───────────────────────────────────────────────────
 
@@ -42,19 +62,29 @@ function toggleView(view) {
 // ── Formulario clínico ───────────────────────────────────────────────────
 
 function setDefaultDateTime() {
-  const now = new Date();
-  const dateEl = document.querySelector('input[type="date"]');
-  const timeEl = document.querySelector('input[type="time"]');
-  if (dateEl) dateEl.value = now.toISOString().split("T")[0];
-  if (timeEl) timeEl.value = now.toTimeString().substring(0, 5);
+  const now  = new Date();
+  const pad  = (n) => String(n).padStart(2, '0');
+  const fecha = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const hora  = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  AppState.form['asistencia-fecha'] = fecha;
+  AppState.form['asistencia-hora']  = hora;
+  if (AppState.constantes[0]) AppState.constantes[0].hora = hora;
+
+  const dateEl       = document.getElementById('asistencia-fecha');
+  const timeEl       = document.getElementById('asistencia-hora');
+  const horaConstEl  = document.querySelector('#constantes-container .input-hora');
+  if (dateEl)      dateEl.value      = fecha;
+  if (timeEl)      timeEl.value      = hora;
+  if (horaConstEl) horaConstEl.value = hora;
 }
 
 function addConstantes() {
-  const rowIndex = AppState.constantes.length;
-  AppState.constantes.push({ ta: '', fc: '', spo2: '', temp: '', gluc: '' });
+  const hora = new Date().toTimeString().substring(0, 5);
+  AppState.constantes.push({ hora, ta: '', fc: '', fr: '', spo2: '', temp: '', gluc: '' });
   const clone = document.getElementById("constantes-row-template").content.cloneNode(true);
-  const rowEl = clone.querySelector('.constantes-row');
-  if (rowEl) rowEl.dataset.constIdx = rowIndex;
+  const horaInput = clone.querySelector('.input-hora');
+  if (horaInput) horaInput.value = hora;
   document.getElementById("constantes-container").appendChild(clone);
 }
 
@@ -98,18 +128,10 @@ function clearReport() {
   document.querySelectorAll(".testigo-row").forEach(row => row.remove());
   document.querySelectorAll("textarea").forEach((ta) => (ta.style.height = "auto"));
   resetFormState();
-  // La primera fila de constantes siempre queda visible — re-registrar en estado
-  const firstRow = document.querySelector('.constantes-row');
-  if (firstRow) {
-    firstRow.dataset.constIdx = '0';
-    AppState.constantes.push({ ta: '', fc: '', spo2: '', temp: '', gluc: '' });
+  if (document.querySelector('.constantes-row')) {
+    AppState.constantes.push({ hora: '', ta: '', fc: '', fr: '', spo2: '', temp: '', gluc: '' });
   }
   setDefaultDateTime();
-  // Sincronizar fecha/hora por defecto al estado (únicos campos con valor inicial)
-  const dateEl = document.querySelector('#dynamic-content input[type="date"]');
-  const timeEl = document.querySelector('#dynamic-content input[type="time"]');
-  if (dateEl?.id) AppState.form[dateEl.id] = dateEl.value;
-  if (timeEl?.id) AppState.form[timeEl.id] = timeEl.value;
   initSignaturePads();
 }
 
@@ -121,6 +143,7 @@ function appendTratamiento() {
   if (!farmaco.value) return;
   textarea.value += `- ${farmaco.value} (${dosis.value || "S/D"}) Vía: ${via.value}\n`;
   autoResize(textarea);
+  syncElementToState(textarea);   // mutación silenciosa — el Store no recibe el evento 'input'
   farmaco.value = "";
   dosis.value   = "";
   farmaco.focus();
@@ -138,6 +161,7 @@ function initMultiAutocomplete(inputId, database, isMulti = true) {
   if (!input) return;
 
   input.removeAttribute("list");
+  input.dataset.acInput = "";
   
   // Garantizar que el padre sea relative para anclar el menú sin romper flexbox
   if (input.parentElement && window.getComputedStyle(input.parentElement).position === "static") {
@@ -152,6 +176,26 @@ function initMultiAutocomplete(inputId, database, isMulti = true) {
     // Clases añadidas: top-full left-0 mt-1 para descolgar debajo del input
     menu.className = "absolute top-full left-0 mt-1 z-50 w-full bg-white border border-slate-300 rounded shadow-lg max-h-40 overflow-y-auto hidden text-xs text-slate-800";
     input.parentNode.insertBefore(menu, input.nextSibling);
+
+    // Delegación única sobre el contenedor del menú — evita listeners por <li>
+    menu.addEventListener("mousedown", function onMenuMousedown(e) {
+      if (e.target.closest("li")) e.preventDefault();
+    });
+    menu.addEventListener("click", function onMenuClick(e) {
+      const li = e.target.closest("li");
+      if (!li?.dataset.match) return;
+      const match = li.dataset.match;
+      if (isMulti) {
+        const parts = input.value.split(",");
+        parts[parts.length - 1] = " " + match;
+        input.value = parts.join(",").trim() + ", ";
+      } else {
+        input.value = match;
+      }
+      menu.classList.add("hidden");
+      input.focus();
+      syncElementToState(input);   // selección por clic — no dispara evento 'input' nativo
+    });
   }
 
   if (input._acController) input._acController.abort();
@@ -188,21 +232,7 @@ function initMultiAutocomplete(inputId, database, isMulti = true) {
         const li = document.createElement("li");
         li.className = "px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-slate-100 last:border-0";
         li.textContent = match;
-
-        li.addEventListener("mousedown", (evt) => {
-          evt.preventDefault();
-        });
-
-        li.addEventListener("click", () => {
-          if (isMulti) {
-            parts[parts.length - 1] = " " + match;
-            input.value = parts.join(",").trim() + ", ";
-          } else {
-            input.value = match;
-          }
-          menu.classList.add("hidden");
-          input.focus();
-        });
+        li.dataset.match = match;
         menu.appendChild(li);
       });
       menu.classList.remove("hidden");
@@ -261,7 +291,8 @@ function updateHospitalesDatalist() {
   const inputHospital = document.getElementById("hospital-destino");
   
   inputHospital.value = "";
-  
+  syncElementToState(inputHospital); // reset programático — no dispara evento 'input' nativo
+
   if (provincia && HOSPITALES_DB[provincia]) {
     // Invoca el motor predictivo: id, base de datos, isMulti = false
     initMultiAutocomplete("hospital-destino", HOSPITALES_DB[provincia], false);
@@ -361,72 +392,61 @@ function checkAge() {
 }
 
 
-function rebindGlobalEvents() {
-  // 1. Inicializar Datalist de Provincias y su evento change (si la plantilla lo requiere)
+// ── Handlers nombrados para delegación de cambios en elementos dinámicos ──
+
+function handleProvinciaChange() { updateHospitalesDatalist(); }
+
+function handleSinMedicoChange(checked) {
+  document.getElementById("campos-testigos")?.classList.toggle("hidden", !checked);
+  const lbl = document.getElementById("label-firma-facultativo");
+  if (lbl) lbl.textContent = checked ? "Firma Testigos" : "Facultativo";
+}
+
+function handleTestigosEscenaChange(checked) {
+  document.getElementById("campos-testigos")?.classList.toggle("hidden", !checked);
+}
+
+function handleDependenciaChange(checked) {
+  document.getElementById("bloque-tutor")?.classList.toggle("hidden", !checked);
+  const lbl = document.getElementById("label-firma-paciente");
+  if (lbl) lbl.textContent = checked ? "Firma del Representante Legal" : "Firma del Paciente";
+}
+
+function onDynamicChange(e) {
+  const t = e.target;
+  switch (t.id) {
+    case "provincia-selector":    handleProvinciaChange(); break;
+    case "check-sin-medico":      handleSinMedicoChange(t.checked); break;
+    case "check-testigos-escena": handleTestigosEscenaChange(t.checked); break;
+    case "check-dependencia":     handleDependenciaChange(t.checked); break;
+    case "paciente-nacimiento":   checkAge(); break;
+  }
+  syncElementToState(t);
+}
+
+function mount() {
+  // 1. Poblar datalist de provincias (los cambios son manejados por onDynamicChange vía delegación)
   const provSelector = document.getElementById("provincia-selector");
-  if (provSelector) {
-    if (provSelector.options.length <= 1) {
-      Object.keys(HOSPITALES_DB).sort().forEach((prov) => {
-        const opt = document.createElement("option");
-        opt.value = prov;
-        opt.textContent = prov;
-        provSelector.appendChild(opt);
-      });
-    }
-    provSelector.addEventListener("change", updateHospitalesDatalist);
+  if (provSelector && provSelector.options.length <= 1) {
+    Object.keys(HOSPITALES_DB).sort().forEach((prov) => {
+      const opt = document.createElement("option");
+      opt.value = prov;
+      opt.textContent = prov;
+      provSelector.appendChild(opt);
+    });
   }
 
-  // 2. Inicializar Motor de Firmas Biométricas
+  // 2. Inicializar motor de firmas biométricas (tiene guard interno resizeListenerAdded)
   initSignaturePads();
 
-  // 3. Reasignar eventos nativos del DOM
-  const checkSinMedico = document.getElementById("check-sin-medico");
-  if (checkSinMedico) {
-    checkSinMedico.addEventListener("change", (e) => {
-      const camposTestigos = document.getElementById("campos-testigos");
-      const labelFirmaFacultativo = document.getElementById("label-firma-facultativo");
-      if (e.target.checked) {
-        if (camposTestigos) camposTestigos.classList.remove("hidden");
-        if (labelFirmaFacultativo) labelFirmaFacultativo.textContent = "Firma Testigos";
-      } else {
-        if (camposTestigos) camposTestigos.classList.add("hidden");
-        if (labelFirmaFacultativo) labelFirmaFacultativo.textContent = "Facultativo";
-      }
-    });
-  }
-
-  // Para doc_asuncion_facultativa: checkbox que muestra testigos en escena
-  const checkTestigosEscena = document.getElementById("check-testigos-escena");
-  if (checkTestigosEscena) {
-    checkTestigosEscena.addEventListener("change", (e) => {
-      document.getElementById("campos-testigos")?.classList.toggle("hidden", !e.target.checked);
-    });
-  }
-
-  const nacimientoInput = document.getElementById("paciente-nacimiento");
-  if (nacimientoInput) {
-    nacimientoInput.addEventListener("change", checkAge);
-  }
-
-  const checkDependencia = document.getElementById("check-dependencia");
-  if (checkDependencia) {
-    checkDependencia.addEventListener("change", (e) => {
-      const bloqueTutor = document.getElementById("bloque-tutor");
-      const labelFirmaPaciente = document.getElementById("label-firma-paciente");
-      if (e.target.checked) {
-        if (bloqueTutor) bloqueTutor.classList.remove("hidden");
-        if (labelFirmaPaciente) labelFirmaPaciente.textContent = "Firma del Representante Legal";
-      } else {
-        if (bloqueTutor) bloqueTutor.classList.add("hidden");
-        if (labelFirmaPaciente) labelFirmaPaciente.textContent = "Firma del Paciente";
-      }
-    });
-  }
-
-  // 4. Autocompletado Predictivo
+  // 3. Autocompletado predictivo (AbortController por input para cleanup automático)
   initMultiAutocomplete("diagnostico", CIE10_DB, true);
   initMultiAutocomplete("input-alergias", FARMACOS_DB, true);
   initMultiAutocomplete("farmaco-input", FARMACOS_DB, false);
+
+  // Los eventos change de los checkboxes y selects especiales (provincia-selector,
+  // check-sin-medico, check-testigos-escena, check-dependencia, paciente-nacimiento)
+  // son manejados por onDynamicChange, delegado en reportView desde initStaticEvents().
 }
 
 // ── Selector de plantilla ────────────────────────────────────────────────
@@ -493,15 +513,18 @@ function hydrateInitialState() {
     }
   });
 
-  // Registrar la primera fila de constantes si la plantilla la incluye
   const firstRow = container.querySelector('.constantes-row');
   if (firstRow) {
-    firstRow.dataset.constIdx = '0';
-    AppState.constantes = [{ ta: '', fc: '', spo2: '', temp: '', gluc: '' }];
+    AppState.constantes = [{ hora: '', ta: '', fc: '', fr: '', spo2: '', temp: '', gluc: '' }];
   }
+
+  // Sobrescribe fecha/hora con la hora real del dispositivo de forma determinista,
+  // garantizando que el estado sea autoritativo antes de que el usuario edite nada.
+  setDefaultDateTime();
 }
 
 function switchTemplate() {
+  teardown();
   destroySignaturePads();
   resetFormState();
   const template = getActiveTemplate();
@@ -529,7 +552,7 @@ function switchTemplate() {
 
   if (mainTitle) mainTitle.textContent = template.pdfTitle;
 
-  rebindGlobalEvents();
+  mount();
   hydrateInitialState();
 }
 
@@ -548,7 +571,7 @@ async function generarPDF(state = AppState) {
   spanGenerando.textContent = 'Generando...';
   btnPrint.replaceChildren(spanGenerando);
   // ── Extracción de estado: cero accesos al DOM ────────────────────────────
-  const getVal = (id) => (state.form[id] ?? "");
+  const getVal = (id) => (state?.form?.[id] || "-");
 
   // Datos de asistencia
   const fecha        = getVal("asistencia-fecha");
@@ -562,12 +585,12 @@ async function generarPDF(state = AppState) {
   const lugarAsistencia= getVal("lugar-asistencia") || "—";
 
   // Tutor Legal / Representante
-  const tutorNombre      = getVal("paciente-tutor-nombre");
-  const tutorDni         = getVal("paciente-tutor-dni");
-  const checkDependencia = state.form["check-dependencia"] || false;
+  const checkDependencia = state?.form?.["check-dependencia"] || false;
   const inputNac         = getVal("paciente-nacimiento");
-  const esMenor          = inputNac ? calcularEdadExacta(inputNac) < 18 : false;
+  const esMenor          = inputNac !== "-" ? calcularEdadExacta(inputNac) < 18 : false;
   const tutorFirma       = esMenor || checkDependencia;
+  const tutorNombre      = tutorFirma ? getVal("paciente-tutor-nombre") : null;
+  const tutorDni         = tutorFirma ? getVal("paciente-tutor-dni")    : null;
 
   // Evaluación clínica — alergias
   const selAlergiasVal  = state.form['select-alergias']       || '';
@@ -591,9 +614,11 @@ async function generarPDF(state = AppState) {
 
   // Constantes vitales — leídas del estado, no del DOM
   const constantesData = state.constantes.map((row, i) => [
-    { text: i === 0 ? "Toma 1" : `Toma ${i + 1}`, style: "tableLabel" },
+    { text: `Toma ${i + 1}`, style: "tableLabel" },
+    { text: row.hora || "—", style: "tableData" },
     { text: row.ta   || "—", style: "tableData" },
     { text: row.fc   || "—", style: "tableData" },
+    { text: row.fr   || "—", style: "tableData" },
     { text: row.spo2 || "—", style: "tableData" },
     { text: row.temp || "—", style: "tableData" },
     { text: row.gluc || "—", style: "tableData" },
@@ -724,15 +749,18 @@ function syncElementToState(el) {
   const testigoRow = el.closest('.testigo-row');
 
   if (constRow) {
-    const idx = parseInt(constRow.dataset.constIdx, 10);
-    if (!isNaN(idx) && AppState.constantes[idx]) {
-      const fieldMap = {
-        'input-ta': 'ta', 'input-fc': 'fc', 'input-spo2': 'spo2',
-        'input-temp': 'temp', 'input-gluc': 'gluc',
-      };
-      for (const [cls, key] of Object.entries(fieldMap)) {
-        if (el.classList.contains(cls)) AppState.constantes[idx][key] = el.value.trim();
-      }
+    // Indexación geométrica: posición real del nodo en el DOM, sin depender
+    // de dataset.constIdx que puede desincronizarse tras eliminaciones de filas.
+    const idx = Array.from(constRow.parentElement.children).indexOf(constRow);
+    if (!AppState.constantes[idx]) {
+      AppState.constantes[idx] = { hora: '', ta: '', fc: '', fr: '', spo2: '', temp: '', gluc: '' };
+    }
+    const fieldMap = {
+      'input-hora': 'hora', 'input-ta': 'ta', 'input-fc': 'fc', 'input-fr': 'fr',
+      'input-spo2': 'spo2', 'input-temp': 'temp', 'input-gluc': 'gluc',
+    };
+    for (const [cls, key] of Object.entries(fieldMap)) {
+      if (el.classList.contains(cls)) AppState.constantes[idx][key] = el.value.trim();
     }
     return;
   }
@@ -759,6 +787,97 @@ function syncElementToState(el) {
   }
 }
 
+// ── Smart Input — Constantes Vitales ─────────────────────────────────────
+
+/**
+ * Avanza el foco al siguiente input de la fila al pulsar Enter.
+ * Hace blur() cuando se alcanza el último campo (input-gluc).
+ * Llamado desde el delegador keydown de reportView.
+ */
+function handleConstantesKeydown(e) {
+  if (e.key !== 'Enter') return;
+  const row = e.target.closest('.constantes-row');
+  if (!row) return;
+  e.preventDefault();
+  const inputs = Array.from(row.querySelectorAll('input'));
+  const i = inputs.indexOf(e.target);
+  if (i === -1) return;
+  i < inputs.length - 1 ? inputs[i + 1].focus() : e.target.blur();
+}
+
+/**
+ * Auto-formatea el valor tecleado y salta al siguiente campo cuando se
+ * detecta que el valor está completo según reglas clínicas.
+ *
+ * Retorna true si el input pertenece a una .constantes-row y fue procesado
+ * (incluyendo la llamada a syncElementToState). Retorna false en cualquier
+ * otro caso para que el delegador aplique el sync genérico.
+ */
+function handleConstantesSmartInput(e) {
+  const el  = e.target;
+  const row = el.closest('.constantes-row');
+  if (!row) return false;
+
+  // Regla Cero: backspace → no alterar el valor, pero sí sincronizar.
+  if (e.inputType === 'deleteContentBackward') {
+    syncElementToState(el);
+    return true;
+  }
+
+  const rowInputs = Array.from(row.querySelectorAll('input'));
+  const next      = rowInputs[rowInputs.indexOf(el) + 1] ?? null;
+  let   v         = el.value;
+
+  if (el.classList.contains('input-ta')) {
+    v = v.replace(/[^0-9/]/g, '');
+    if (!v.includes('/')) {
+      // Sistólica: auto-inserta "/" cuando el prefijo determina que está completa.
+      if      (/^[12]/.test(v) && v.length === 3) v += '/';
+      else if (/^[3-9]/.test(v) && v.length === 2) v += '/';
+    } else {
+      // Diastólica: avanza foco cuando el sufijo está completo.
+      const dias = v.split('/')[1] ?? '';
+      if      (/^1/.test(dias)   && dias.length === 3) next?.focus();
+      else if (/^[2-9]/.test(dias) && dias.length === 2) next?.focus();
+    }
+
+  } else if (el.classList.contains('input-fc')) {
+    v = v.replace(/\D/g, '');
+    if ((/^[12]/.test(v) && v.length === 3) || (/^[3-9]/.test(v) && v.length === 2)) {
+      next?.focus();
+    }
+
+  } else if (el.classList.contains('input-fr')) {
+    v = v.replace(/\D/g, '');
+    if (v.length === 2) next?.focus();
+
+  } else if (el.classList.contains('input-spo2')) {
+    v = v.replace(/\D/g, '');
+    if (v === '100' || (/^[5-9]/.test(v) && v.length === 2)) next?.focus();
+
+  } else if (el.classList.contains('input-temp')) {
+    v = v.replace(/[^0-9.]/g, '');
+    if (v.length === 2 && !v.includes('.')) {
+      v += '.';
+    } else if (v.includes('.')) {
+      const dec = v.split('.')[1] ?? '';
+      if (dec.length >= 1) next?.focus();
+    }
+
+  } else if (el.classList.contains('input-gluc')) {
+    v = v.replace(/\D/g, '');
+
+  } else {
+    // Input dentro de la fila pero sin clase de constante conocida (ej. input-hora).
+    // Se deja intacto; el delegador invocará syncElementToState normalmente.
+    return false;
+  }
+
+  el.value = v;
+  syncElementToState(el);
+  return true;
+}
+
 // ── Eventos estáticos y delegación de componentes dinámicos ──────────────
 
 function initStaticEvents() {
@@ -776,31 +895,31 @@ function initStaticEvents() {
       case "clearSignature":        clearSignature(btn.dataset.target); break;
       case "appendTratamiento":     appendTratamiento(); break;
       case "removeConstantesRow": {
+        if (!confirm("¿Eliminar esta toma de constantes?")) break;
         const row = btn.closest('.constantes-row');
-        const idx = parseInt(row.dataset.constIdx, 10);
-        if (!isNaN(idx)) AppState.constantes.splice(idx, 1);
+        const idx = Array.from(row.parentElement.children).indexOf(row);
+        if (idx !== -1) AppState.constantes.splice(idx, 1);
         row.remove();
-        // Re-asignar data-const-idx a filas restantes para mantener coherencia DOM↔estado
-        document.querySelectorAll('.constantes-row').forEach((r, i) => { r.dataset.constIdx = i; });
         break;
       }
     }
   });
 
-  // Delegación de input: autoResize + validación numérica + sync a AppState
+  // Delegación de input: autoResize + smart-input de constantes + sync a AppState.
+  // handleConstantesSmartInput devuelve true si procesó el input (y ya llamó a
+  // syncElementToState internamente); false para cualquier otro campo, donde el
+  // sync genérico se aplica aquí directamente.
   reportView.addEventListener("input", (e) => {
     if (e.target.tagName === "TEXTAREA") autoResize(e.target);
-    const el = e.target;
-    if      (el.classList.contains("input-ta"))   el.value = el.value.replace(/[^0-9/]/g, '');
-    else if (el.classList.contains("input-fc"))   el.value = el.value.replace(/[^0-9]/g, '');
-    else if (el.classList.contains("input-spo2")) el.value = el.value.replace(/[^0-9]/g, '');
-    else if (el.classList.contains("input-temp")) el.value = el.value.replace(/[^0-9.,]/g, '');
-    else if (el.classList.contains("input-gluc")) el.value = el.value.replace(/[^0-9]/g, '');
-    syncElementToState(el);   // captura el valor ya validado
+    if (!handleConstantesSmartInput(e)) syncElementToState(e.target);
   });
 
-  // Selects y checkboxes disparan 'change', no 'input'
-  reportView.addEventListener("change", (e) => syncElementToState(e.target));
+  // Delegación de keydown: Enter en .constantes-row avanza el foco entre campos.
+  reportView.addEventListener("keydown", handleConstantesKeydown);
+
+  // Selects, checkboxes y campos especiales disparan 'change', no 'input'.
+  // onDynamicChange ruta los casos especiales antes de sincronizar al AppState.
+  reportView.addEventListener("change", onDynamicChange);
 }
 
 // ── Inicialización (window.onload) ────────────────────────────────────────
@@ -813,9 +932,7 @@ window.onload = () => {
   document.getElementById("btn-info").addEventListener("click", () => toggleView("instructions"));
   document.getElementById("btn-report").addEventListener("click", () => toggleView("report"));
   document.getElementById("btn-clear").addEventListener("click", clearReport);
-  document.getElementById("btn-print").addEventListener("click", generarPDF);
-
-
+  document.getElementById("btn-print").addEventListener("click", () => generarPDF());
 
   // Selector de plantilla
   const docSelector = document.getElementById("doc-selector");
@@ -824,6 +941,15 @@ window.onload = () => {
   }
 
   switchTemplate(); // Renderizado inicial
+
+  // Watchdog LOPDGDD/GDPR — purga de componentes propios de app.js al expirar sesión.
+  // watchdog.js no puede importar app.js (evita dependencia circular), por lo que
+  // delega la destrucción de SignaturePads y autocomplete mediante este CustomEvent.
+  document.addEventListener('watchdog:session-expired', () => {
+    destroySignaturePads();
+    teardown();
+  });
+  WatchdogService.initWatchdog();
 
   window.addEventListener("beforeunload", (e) => {
     e.preventDefault();

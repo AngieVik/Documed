@@ -291,7 +291,7 @@ const UI_COMPONENTS = {
               <span id="label-firma-paciente" class="text-[10px] font-semibold text-slate-700 tracking-wide">${labelPaciente}</span>
             </div>
             <div class="aspect-[4/1] w-full relative border border-slate-200 rounded bg-white overflow-hidden">
-              <span class="absolute inset-0 flex items-center justify-center text-[10px] text-slate-300 italic text-center px-4 pointer-events-none select-none">Acepto la asistencia prestada.</span>
+              <span class="absolute inset-0 flex items-center justify-center text-[8px] text-slate-300 italic text-center px-4 pointer-events-none select-none">Acepto la asistencia</span>
               <canvas id="canvas-paciente" class="absolute inset-0 w-full h-full rounded cursor-crosshair bg-transparent"></canvas>
               <button type="button" class="${T.sigBtn}" data-action="clearSignature" data-target="paciente">Borrar</button>
             </div>
@@ -303,15 +303,15 @@ const UI_COMPONENTS = {
               <div class="flex flex-col gap-0.5 no-print">
                 ${categoriaFieldHTML}
                 <div class="flex gap-1">
-                  <input type="text" id="input_firma_nombre" placeholder="Nombre del Profesional"
-                    class="flex-1 border-b border-slate-200 bg-transparent py-0.5 text-xs text-slate-800 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
+                  <input type="text" id="input_firma_nombre" placeholder="Nombre"
+                    class="flex-1 border-b border-slate-200 bg-transparent py-0.5 text-[10px] text-slate-700 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
                   <input type="text" id="input_firma_num" placeholder="Nº "
-                    class="w-20 border-b border-slate-200 bg-transparent py-0.5 text-xs text-slate-800 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
+                    class="w-20 border-b border-slate-200 bg-transparent py-0.5 text-[8px] text-slate-700 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
                 </div>
               </div>
             </div>
             <div class="aspect-[4/1] w-full relative border border-slate-200 rounded bg-white overflow-hidden">
-              <span class="absolute inset-0 flex items-center justify-center text-[10px] text-slate-300 italic text-center px-4 pointer-events-none select-none">El documento será firmado digitalmente.</span>
+              <span class="absolute inset-0 flex items-center justify-center text-[8px] text-slate-300 italic text-center px-4 pointer-events-none select-none">Firma del Profesional</span>
               <canvas id="canvas-medico" class="absolute inset-0 w-full h-full rounded cursor-crosshair bg-transparent"></canvas>
               <button type="button" class="${T.sigBtn}" data-action="clearSignature" data-target="medico">Borrar</button>
             </div>

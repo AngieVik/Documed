@@ -284,7 +284,7 @@ const UI_COMPONENTS = {
   firmas(labelPaciente, categoriaFieldHTML = '') {
     return `
       <div id="firmas" class="section-block mt-4 pt-3 border-t border-slate-200 page-break-avoid">
-        <div class="grid grid-cols-1 xs:grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <!-- COLUMNA PACIENTE -->
           <div class="flex flex-col">
             <div class="flex-1 flex flex-col justify-end pb-1">
@@ -302,11 +302,11 @@ const UI_COMPONENTS = {
             <div class="flex-1 flex flex-col justify-end pb-1">
               <div class="flex flex-col gap-0.5 no-print">
                 ${categoriaFieldHTML}
-                <div class="flex gap-1">
+                <div class="flex gap-1 min-w-0">
                   <input type="text" id="input_firma_nombre" placeholder="Nombre"
-                    class="flex-1 border-b border-slate-200 bg-transparent py-0.5 text-[10px] text-slate-700 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
+                    class="flex-1 min-w-0 border-b border-slate-200 bg-transparent py-0.5 text-[10px] text-slate-700 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
                   <input type="text" id="input_firma_num" placeholder="Nº "
-                    class="w-20 border-b border-slate-200 bg-transparent py-0.5 text-[8px] text-slate-700 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
+                    class="w-16 sm:w-20 min-w-0 shrink-0 border-b border-slate-200 bg-transparent py-0.5 text-[8px] text-slate-700 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
                 </div>
               </div>
             </div>

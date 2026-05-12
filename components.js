@@ -275,9 +275,9 @@ const UI_COMPONENTS = {
               <div class="flex flex-col gap-0.5 no-print">
                 ${categoriaFieldHTML}
                 <div class="flex gap-1">
-                  <input type="text" id="input_firma_nombre" placeholder="Nombre del facultativo / diplomado/a"
+                  <input type="text" id="input_firma_nombre" placeholder="Nombre del Profesional"
                     class="flex-1 border-b border-slate-200 bg-transparent py-0.5 text-xs text-slate-800 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
-                  <input type="text" id="input_firma_num" placeholder="Nº Col./Dip."
+                  <input type="text" id="input_firma_num" placeholder="Nº "
                     class="w-20 border-b border-slate-200 bg-transparent py-0.5 text-xs text-slate-800 placeholder-slate-300 focus:outline-none focus:border-sky-400 transition-colors" />
                 </div>
               </div>
